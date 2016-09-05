@@ -179,8 +179,11 @@ type Goose struct {
 	Print		goose.Alert
 }
 
-var ClientName	string
+type WsdlT struct {
+	clientName	string
+	xmlData		WSDLStruct
+}
+
 var XMLFile		io.Reader
-var xmlData		WSDLStruct
 var debug		Goose
 

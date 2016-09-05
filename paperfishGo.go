@@ -8,30 +8,37 @@ import (
 	"strings"
 	"encoding/xml"
 	"github.com/luisfurquim/goose"
-	"github.com/gabrielledf/paperfishGo/analyzer"
+	"github.com/gabrielledf/paperfishGo/parser"
 	//"golang.org/x/net/html"
 	//"fmt"
 )
 
+//TODO: Change goose.Printf to goose.Log where needed.
+//TODO: Improve documentation
 var schemaNS string
 
 //Initializes the structs and variables to read and process the WSDL file in data structures
-func New(name string, wsdlFile io.Reader) {
-	ClientName = name
-	XMLFile = wsdlFile
+func New(name string, wsdlreader io.Reader) *WsdlT {
+	var paperfish WsdlT
+	
+	XMLFile = wsdlreader
 	debug.New = goose.Alert(5)
 	debug.Read = goose.Alert(5)
 	debug.Print = goose.Alert(5)
-
-	err := readWSDL()	
+	
+	paperfish = WsdlT{clientName:name}
+	
+	err := paperfish.readWSDL(wsdlreader)	
 	if err != nil {
 		debug.New.Logf(1,"Failed init XML data struct from WSDL file %s", err)
 		os.Exit(1)	
 	}
 	
 	//Input parameters are definitions, types, message, operations, bindings and service
-	printWSDL(9,9,9,9,9,9)
-	//printWSDL(4,4,4,4,4,4)
+	//paperfish.printWSDL(9,9,9,9,9,9)
+	//paperfish.printWSDL(4,4,4,4,4,4)
+	
+	return &paperfish
 }
 
 
@@ -88,37 +95,37 @@ func (ns *Message) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 
 //Reads WSDL file from local disk and unmarshal this file in WSDLStruct data structure
-func readWSDL() error {
+func (w *WsdlT) readWSDL(reader io.Reader) error {
     var wsdlbuf []byte
 	var err error
 	
 	//Reads WSDL file
-	wsdlbuf, err = ioutil.ReadAll(XMLFile)
+	wsdlbuf, err = ioutil.ReadAll(reader)
 	if err != nil {
         debug.Read.Logf(1,"Failed reading WSDL file %s",err)
         return err
     }
    
     //Unmarshal WSDL file
-    err = xml.Unmarshal(wsdlbuf, &xmlData)
+    err = xml.Unmarshal(wsdlbuf, &w.xmlData)
     if err != nil {
         debug.Read.Logf(1,"Failed unmarshal xml: %v", err)
 		return err
 	}
 	
 	
-	detectNS()
+	w.detectNS()
 	debug.Read.Printf(9,"PaperfishGo: Schema namespace = %s\n", schemaNS)
 	//Call the parser to check the schema tags of WSDL file.
-	analyzer.CheckWSDL(bytes.NewReader(wsdlbuf), schemaNS)	
+	parser.CheckWSDL(bytes.NewReader(wsdlbuf), schemaNS)	
     return nil
 }
 
 
 
 //Detect the schema tag namespace
-func detectNS() {
-	for ns, value := range xmlData.Namespace {
+func (w *WsdlT) detectNS() {
+	for ns, value := range w.xmlData.Namespace {
 		debug.Read.Printf(9," [%s] = %s\n", ns, value)
 		ok := strings.Contains(value, "XMLSchema")
 		if ok {
@@ -132,20 +139,20 @@ func detectNS() {
 
 
 //Prints the XML structure in the command line. Only for debug purposes
-func printWSDL(definitions, types, message, operations, bindings, service int) {
+func (w *WsdlT) printWSDL(definitions, types, message, operations, bindings, service int) {
 	debug.Print.Printf(definitions,"-------------------------------------------------XML Data:--------------------------------------------------------------------------------\n\n")
 	
 	debug.Print.Printf(definitions,"Definitions \n")
-	debug.Print.Printf(definitions,"TargetName: \t %s\n", xmlData.TargetName)
-    debug.Print.Printf(definitions,"Namespaces: \t %s\n", xmlData.Namespace)
-    debug.Print.Printf(definitions, "NamespaceReverse \t %s\n", xmlData.NamespaceReverse)
-	debug.Print.Printf(definitions,"Documentation: \t %s\n", xmlData.Documentation)
+	debug.Print.Printf(definitions,"TargetName: \t %s\n", w.xmlData.TargetName)
+    debug.Print.Printf(definitions,"Namespaces: \t %s\n", w.xmlData.Namespace)
+    debug.Print.Printf(definitions, "NamespaceReverse \t %s\n", w.xmlData.NamespaceReverse)
+	debug.Print.Printf(definitions,"Documentation: \t %s\n", w.xmlData.Documentation)
 	debug.Print.Printf(definitions,"---------------------------------------------------------------------------------------------\n")
 
 	debug.Print.Printf(types,"Types Element \n")
 	debug.Print.Printf(types, "\t Schemas \n")
 	schemaNumber := 1
-	for _, schema := range xmlData.Types {
+	for _, schema := range w.xmlData.Types {
 		debug.Print.Printf(types, "\t Schema number %d\n",schemaNumber)
 		
 		debug.Print.Printf(types, "\t\t AttributeFormDefault: \t %s\n",schema.AttributeFormDefault)
@@ -228,7 +235,7 @@ func printWSDL(definitions, types, message, operations, bindings, service int) {
 	debug.Print.Printf(types,"---------------------------------------------------------------------------------------------\n")
 
 	debug.Print.Printf(message, "Message Element\n")
-	for _, msg := range xmlData.Message {
+	for _, msg := range w.xmlData.Message {
 		debug.Print.Printf(message, "\t Message Name: \t %s\n", msg.Name)
 		debug.Print.Printf(message,"\t\t Element Part:\t %s\n", msg.Part.Element)
 		debug.Print.Printf(message, "\t\t Element Name:\t %s\n", msg.Part.Name)
@@ -236,7 +243,7 @@ func printWSDL(definitions, types, message, operations, bindings, service int) {
 	debug.Print.Printf(message,"---------------------------------------------------------------------------------------------\n")
 		
 	debug.Print.Printf(operations,"Operation Element\n")
-	for _, oper := range xmlData.PortType {
+	for _, oper := range w.xmlData.PortType {
 		debug.Print.Printf(operations,"\t Name:\t %s\n",oper.Name)
 		debug.Print.Printf(operations,"\t Input:\t %s\n",oper.Input)
 		debug.Print.Printf(operations,"\t Output: %s\n", oper.Output)
@@ -248,7 +255,7 @@ func printWSDL(definitions, types, message, operations, bindings, service int) {
 
 	
 	debug.Print.Printf(bindings,"Binding Element \n")
-	for _, bind := range xmlData.Binding {
+	for _, bind := range w.xmlData.Binding {
 		if bind.Protocol.Style != "" {
 			debug.Print.Printf(bindings,"\t Name:\t\t %s\n", bind.Name)
 			debug.Print.Printf(bindings,"\t Type:\t\t %s\n", bind.Type)
@@ -278,7 +285,7 @@ func printWSDL(definitions, types, message, operations, bindings, service int) {
 	}
 	debug.Print.Printf(bindings,"---------------------------------------------------------------------------------------------\n")
 	debug.Print.Printf(service,"Service Element \n")
-	for _, value := range xmlData.Service {
+	for _, value := range w.xmlData.Service {
 		debug.Print.Printf(service,"Service Name: %s\n", value.Name)
 		for _, port := range value.Port {
 			debug.Print.Printf(service,"\t Port Binding: %s\n", port.Binding)
