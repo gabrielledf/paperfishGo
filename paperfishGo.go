@@ -1,5 +1,7 @@
 package paperfishGo
 
+/*
+
 import (
 	"bytes"
 	"encoding/xml"
@@ -284,3 +286,6 @@ func (w *WsdlT) printWSDL(definitions, types, message, operations, bindings, ser
 	}
 	debug.Print.Printf(service, "---------------------------------------------------------------------------------------------\n")
 }
+
+*/
+
