@@ -13,8 +13,6 @@ purposes only.
 ## Example
 
 ```Go
-   transp =
-
    httpclient = &http.Client{
       Transport:  &http.Transport{
          TLSClientConfig:     <some TLS configuratio>,
