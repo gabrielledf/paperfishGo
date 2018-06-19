@@ -159,7 +159,7 @@ func NewFromReader(contract io.Reader, client *http.Client) (*WSClientT, error) 
 
 						subop.Parms = append(subop.Parms, paperParm)
 					}
-					if op.SubOperations==nil {
+					if op.SubOperations == nil {
 						op.SubOperations = map[string]*SubOperationT{}
 					}
 					op.SubOperations[subOpSpec.SuboperationId] = subop

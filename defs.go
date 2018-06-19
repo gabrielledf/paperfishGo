@@ -42,21 +42,21 @@ type Decoder interface {
 }
 
 type OperationT struct {
-	Path             string
-	Schemes        []string
-	Encoder          Encoder
-	Decoder          Decoder
+	Path          string
+	Schemes       []string
+	Encoder       Encoder
+	Decoder       Decoder
 	PathParm      []*ParameterT
 	HeaderParm    []*ParameterT
 	QueryParm     []*ParameterT
-	BodyParm        *ParameterT
+	BodyParm      *ParameterT
 	FormParm      []*ParameterT
-   SubOperations map[string]*SubOperationT
+	SubOperations map[string]*SubOperationT
 }
 
 type SubOperationT struct {
-	Id         string
-	Parms   []*ParameterT
+	Id    string
+	Parms []*ParameterT
 }
 
 type WSClientT struct {
@@ -76,21 +76,21 @@ type WSClientT struct {
 }
 
 type WSockClientT struct {
-   SubOperations map[string]*SubOperationT
-	receiver  chan []interface{}
-	cli2srvch chan WSockRequest
-	bindch    chan WSockRequest
+	SubOperations map[string]*SubOperationT
+	receiver      chan []interface{}
+	cli2srvch     chan WSockRequest
+	bindch        chan WSockRequest
 }
 
 type CallbackT struct {
 	Callback     reflect.Value
-   FailCallback func(int)
+	FailCallback func(int)
 }
 
 type WSockRequest struct {
 	SubOperation string
 	Params       []interface{}
-   CallbackT
+	CallbackT
 }
 
 /*
@@ -116,7 +116,7 @@ type GoUnmarshalMessage Message
 
 //TODO: fazer algum processamento para preencher os vetores de parâmetros a partir do nome das mensagens
 type Message struct {
-	Name string `xml:"message,attr"`
+	Name             string `xml:"message,attr"`
 	Namespace        map[string]string
 	NamespaceReverse map[string]string
 	//InputParameters    []ParametersT
@@ -171,10 +171,10 @@ type XMLnsT struct {
 }
 
 type SchemaT struct {
-	AttributeFormDefault string         `xml:"attributeFormDefault,attr"`
-	ElementFormDefault   string         `xml:"elementFormDefault,attr"`
-	TargetNamespace      string         `xml:"targetNamespace,attr"`
-	XMLAttr              []xml.Attr     `xml:",any"`
+	AttributeFormDefault string     `xml:"attributeFormDefault,attr"`
+	ElementFormDefault   string     `xml:"elementFormDefault,attr"`
+	TargetNamespace      string     `xml:"targetNamespace,attr"`
+	XMLAttr              []xml.Attr `xml:",any"`
 	Namespace            map[string]string
 	NamespaceReverse     map[string]string
 	Import               []ImportT      `xml:"import"`
@@ -256,21 +256,21 @@ type MessageT struct {
 }
 
 type WSDLStruct struct {
-	TargetName    string      `xml:"targetNamespace,attr"`
+	TargetName       string `xml:"targetNamespace,attr"`
 	Namespace        map[string]string
 	NamespaceReverse map[string]string
-	Documentation string      `xml:"documentation"`
-	Types         []SchemaT   `xml:"types>schema"`
-	Message       []MessageT  `xml:"message"`
-	PortType      []Operation `xml:"portType>operation"`
-	Binding       []BindingT  `xml:"binding"`
-	Service       []Endpoint  `xml:"service"`
+	Documentation    string      `xml:"documentation"`
+	Types            []SchemaT   `xml:"types>schema"`
+	Message          []MessageT  `xml:"message"`
+	PortType         []Operation `xml:"portType>operation"`
+	Binding          []BindingT  `xml:"binding"`
+	Service          []Endpoint  `xml:"service"`
 }
 
 type GooseG struct {
 	New   goose.Alert
 	Fetch goose.Alert
-   Set   goose.Alert
+	Set   goose.Alert
 }
 
 /*

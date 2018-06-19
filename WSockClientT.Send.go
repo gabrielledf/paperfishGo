@@ -23,7 +23,7 @@ func (wsc *WSockClientT) Send(opName string, params map[string]interface{}, fn i
 
 	Goose.Fetch.Logf(4, "Will send data to %s through websocket", opName)
 
-	if wsc==nil || wsc.SubOperations == nil {
+	if wsc == nil || wsc.SubOperations == nil {
 		Goose.Fetch.Logf(1, "Error %s for %s suboperation", ErrNilHandle, opName)
 		return ErrNilHandle
 	}

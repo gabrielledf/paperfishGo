@@ -1,9 +1,9 @@
 package paperfishGo
 
 import (
-	"time"
-	"math/rand"
 	"crypto/sha256"
+	"math/rand"
+	"time"
 )
 
 func NewWSTrackId() (uint32, error) {

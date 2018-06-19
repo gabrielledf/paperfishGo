@@ -1,13 +1,12 @@
 package paperfishGo
 
 import (
-	"io"
-	"os"
 	"fmt"
+	"golang.org/x/net/websocket"
+	"io"
+	"net/http"
 	"reflect"
 	"strings"
-	"net/http"
-	"golang.org/x/net/websocket"
 )
 
 func (ws *WSClientT) Get(opName string, input map[string]interface{}, output interface{}) (int, error) {
@@ -154,9 +153,9 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 
 		WSockClient = WSockClientT{
 			SubOperations: op.SubOperations,
-			receiver:  make(chan []interface{}),
-			cli2srvch: make(chan WSockRequest),
-			bindch:    make(chan WSockRequest),
+			receiver:      make(chan []interface{}),
+			cli2srvch:     make(chan WSockRequest),
+			bindch:        make(chan WSockRequest),
 		}
 
 		go func() {
@@ -250,7 +249,7 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 
 					pending[wstrackId] = func(name string, callback reflect.Value) CallbackT {
 						Goose.Fetch.Logf(5, "On receiver -> fn=%#v", callback)
-						return CallbackT {
+						return CallbackT{
 							Callback: reflect.ValueOf(func(httpStat uint32) {
 								if httpStat != 200 {
 									Goose.Fetch.Logf(1, "Error binding event on websocket at %s [%#v]>", targetURI, httpStat)
@@ -261,14 +260,14 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 
 								pendingEvents[name] = append(pendingEvents[name], callback)
 							}),
-							FailCallback: func(int){},
+							FailCallback: func(int) {},
 						}
 					}(req.SubOperation, req.Callback)
 
 				case req = <-WSockClient.cli2srvch:
 					Goose.Fetch.Logf(5, "Received message to send to server: %#v", req)
 					for {
-						Goose.Fetch.Logf51, "Will generate new Track ID")
+						Goose.Fetch.Logf(5, "Will generate new Track ID")
 						wstrackId, err = NewWSTrackId()
 						Goose.Fetch.Logf(5, "Generated new Track ID")
 						if err != nil {
@@ -276,7 +275,7 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 							return
 						}
 
-						Goose.Fetch.Logf(1, "Generated new Track ID %d without error",wstrackId)
+						Goose.Fetch.Logf(1, "Generated new Track ID %d without error", wstrackId)
 						if _, ok = pending[wstrackId]; !ok {
 							break
 						}
@@ -330,7 +329,7 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 							break
 						}
 
-						if int(httpStat)>=http.StatusBadRequest { // Check for error function
+						if int(httpStat) >= http.StatusBadRequest { // Check for error function
 							Goose.Fetch.Logf(5, "Fail Callback of %d", wstrackId)
 							go fn.FailCallback(int(httpStat))
 						} else {

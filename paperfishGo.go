@@ -288,4 +288,3 @@ func (w *WsdlT) printWSDL(definitions, types, message, operations, bindings, ser
 }
 
 */
-

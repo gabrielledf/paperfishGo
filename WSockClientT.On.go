@@ -18,7 +18,7 @@ func (wsc *WSockClientT) On(evtName string, fn interface{}) error {
 		wsc.bindch <- WSockRequest{
 			SubOperation: evtName,
 			CallbackT: CallbackT{
-				Callback:     fnval,
+				Callback: fnval,
 			},
 		}
 	}()
