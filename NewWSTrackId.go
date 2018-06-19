@@ -1,21 +1,24 @@
 package paperfishGo
 
 import (
-	"crypto/sha256"
+	"time"
 	"math/rand"
+	"crypto/sha256"
 )
 
 func NewWSTrackId() (uint32, error) {
 	var buf []byte
-	var b []byte
 	var c byte
 	var err error
 	var i int
 	var n uint32
 	var sum [sha256.Size]byte
+	var rnd *rand.Rand
 
-	b = make([]byte, 256)
-	_, err = rand.Read(b)
+	rnd = rand.New(rand.NewSource(int64(time.Now().Nanosecond())))
+
+	buf = make([]byte, 256)
+	_, err = rnd.Read(buf)
 	if err != nil {
 		Goose.Fetch.Logf(1, "Error generating random string")
 		return 0, err

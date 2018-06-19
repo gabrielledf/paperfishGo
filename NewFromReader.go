@@ -29,6 +29,9 @@ func NewFromReader(contract io.Reader, client *http.Client) (*WSClientT, error) 
 	var method string
 	var operation *stonelizard.SwaggerOperationT
 	var coder interface{}
+	var subop *SubOperationT
+	var subOpSpec *stonelizard.SwaggerWSOperationT
+	var param stonelizard.SwaggerParameterT
 
 	ws = &WSClientT{
 		GetOperation:     map[string]*OperationT{},
@@ -133,7 +136,35 @@ func NewFromReader(contract io.Reader, client *http.Client) (*WSClientT, error) 
 					op.Schemes = operation.Schemes
 				}
 
-				Goose.New.Logf(4, " %s %#v -> %s+%s -> %s %#v\n", operation.Consumes, op.Encoder, method, operation.OperationId, operation.Produces, op.Decoder)
+				Goose.New.Logf(5, " %s %#v -> %s+%s -> %s %#v\n", operation.Consumes, op.Encoder, method, operation.OperationId, operation.Produces, op.Decoder)
+
+				for _, subOpSpec = range operation.XWSOperations {
+					Goose.New.Logf(2, "Registering sub-operation %s.%s.%s", method, operation.OperationId, subOpSpec.SuboperationId)
+					subop = &SubOperationT{Id: subOpSpec.SuboperationId}
+					for _, param = range subOpSpec.Parameters {
+						if param.Type != "" {
+							k, err = getKind(param.Type)
+						} else {
+							k = kindString
+						}
+						if err != nil {
+							Goose.New.Logf(1, "Ignoring sub-operation %s.%s.%s.%s: %s", method, operation.OperationId, subOpSpec.SuboperationId, param.Name, err)
+							continue
+						}
+
+						paperParm = &ParameterT{
+							Name: param.Name,
+							Kind: k,
+						}
+
+						subop.Parms = append(subop.Parms, paperParm)
+					}
+					if op.SubOperations==nil {
+						op.SubOperations = map[string]*SubOperationT{}
+					}
+					op.SubOperations[subOpSpec.SuboperationId] = subop
+					Goose.New.Logf(5, "Registered sub-operation %s.%s.%s: %#v", method, operation.OperationId, subOpSpec.SuboperationId, op.SubOperations)
+				}
 
 				switch strings.ToLower(method) {
 				case "get":
@@ -165,6 +196,7 @@ func NewFromReader(contract io.Reader, client *http.Client) (*WSClientT, error) 
 					}
 					if err != nil {
 						Goose.New.Logf(1, "Ignoring operation %s.%s.%s: %s", method, operation.OperationId, swaggerParm.Name, err)
+						continue
 					}
 
 					paperParm = &ParameterT{
@@ -185,6 +217,7 @@ func NewFromReader(contract io.Reader, client *http.Client) (*WSClientT, error) 
 						op.FormParm = append(op.FormParm, paperParm)
 					}
 				}
+
 			}
 		}
 	}

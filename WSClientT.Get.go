@@ -1,12 +1,13 @@
 package paperfishGo
 
 import (
-	"fmt"
-	"golang.org/x/net/websocket"
 	"io"
-	"net/http"
+	"os"
+	"fmt"
 	"reflect"
 	"strings"
+	"net/http"
+	"golang.org/x/net/websocket"
 )
 
 func (ws *WSClientT) Get(opName string, input map[string]interface{}, output interface{}) (int, error) {
@@ -93,20 +94,22 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 		Goose.Fetch.Logf(1, "TID:[%s] request URL %s", trackId, req.URL.Path)
 		resp, err = ws.Client.Do(req)
 		if err != nil {
-			Goose.Fetch.Logf(6, "TID:[%s] Error fetching %s:%s", trackId, opName, err)
+			Goose.Fetch.Logf(1, "TID:[%s] Error fetching %s:%s", trackId, opName, err)
 			return 0, err
 		}
 
 		defer resp.Body.Close()
 		err = ws.GetOperation[opName].Decoder.Decode(resp.Body, output)
 		if err != nil && err != io.EOF {
-			Goose.Fetch.Logf(6, "TID:[%s] Error decoding response for %s:%s", trackId, opName, err)
+			Goose.Fetch.Logf(1, "TID:[%s] Error decoding response for %s:%s", trackId, opName, err)
 			return 0, err
 		}
 
 		return resp.StatusCode, nil
 
 	} else {
+
+		Goose.Fetch.Logf(4, "Suboperations of %s: %#v", opName, op.SubOperations)
 
 		switch output.(type) {
 		case **WSockClientT:
@@ -150,6 +153,7 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 		}
 
 		WSockClient = WSockClientT{
+			SubOperations: op.SubOperations,
 			receiver:  make(chan []interface{}),
 			cli2srvch: make(chan WSockRequest),
 			bindch:    make(chan WSockRequest),
@@ -199,7 +203,9 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 					*/
 				}
 
+				Goose.Fetch.Logf(4, "Received from websocket at %s: got [%#v]", targetURI, message[1])
 				WSockClient.receiver <- message
+				Goose.Fetch.Logf(3, "Sent to select loop")
 			}
 		}()
 
@@ -208,18 +214,20 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 			var err error
 			var wstrackId uint32
 			var req WSockRequest
-			var pending map[uint32]reflect.Value
+			var pending map[uint32]CallbackT
 			var pendingEvents map[string][]reflect.Value
-			var fn reflect.Value
+			var fn CallbackT
 			var resp []interface{}
 			var evtName string
 			var resppar []interface{}
 			var parmval []reflect.Value
+			var httpStat uint32
 
-			pending = map[uint32]reflect.Value{}
+			pending = map[uint32]CallbackT{}
 			pendingEvents = map[string][]reflect.Value{}
 
 			for {
+				Goose.Fetch.Logf(4, "Entering select")
 				select {
 				case req = <-WSockClient.bindch:
 					for {
@@ -240,45 +248,55 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 						return
 					}
 
-					pending[wstrackId] = func(name string, callback reflect.Value) reflect.Value {
+					pending[wstrackId] = func(name string, callback reflect.Value) CallbackT {
 						Goose.Fetch.Logf(5, "On receiver -> fn=%#v", callback)
-						return reflect.ValueOf(func(httpStat uint32) {
-							if httpStat != 200 {
-								Goose.Fetch.Logf(1, "Error binding event on websocket at %s [%#v]>", targetURI, httpStat)
-								return
-							}
+						return CallbackT {
+							Callback: reflect.ValueOf(func(httpStat uint32) {
+								if httpStat != 200 {
+									Goose.Fetch.Logf(1, "Error binding event on websocket at %s [%#v]>", targetURI, httpStat)
+									return
+								}
 
-							Goose.Fetch.Logf(5, "Get receiver -> fn=%#v", callback)
+								Goose.Fetch.Logf(5, "Get receiver -> fn=%#v", callback)
 
-							pendingEvents[name] = append(pendingEvents[name], callback)
-						})
+								pendingEvents[name] = append(pendingEvents[name], callback)
+							}),
+							FailCallback: func(int){},
+						}
 					}(req.SubOperation, req.Callback)
 
 				case req = <-WSockClient.cli2srvch:
+					Goose.Fetch.Logf(5, "Received message to send to server: %#v", req)
 					for {
+						Goose.Fetch.Logf51, "Will generate new Track ID")
 						wstrackId, err = NewWSTrackId()
+						Goose.Fetch.Logf(5, "Generated new Track ID")
 						if err != nil {
 							Goose.Fetch.Logf(1, "Error generating new Track ID: %s", err)
 							return
 						}
 
+						Goose.Fetch.Logf(1, "Generated new Track ID %d without error",wstrackId)
 						if _, ok = pending[wstrackId]; !ok {
 							break
 						}
 					}
 
+					Goose.Fetch.Logf(5, "Sending %#v to %s", []interface{}{wstrackId, req.SubOperation, req.Params}, targetURI)
 					err = websocket.JSON.Send(wsock, &[]interface{}{wstrackId, req.SubOperation, req.Params})
 					if err != nil {
 						Goose.Fetch.Logf(1, "Error sending to websocket at %s: %s", targetURI, err)
 						return
 					}
 
-					pending[wstrackId] = req.Callback
+					pending[wstrackId] = req.CallbackT
 
 				case resp = <-WSockClient.receiver:
 					if wstrackId, ok = resp[0].(uint32); !ok {
 						Goose.Fetch.Logf(1, "Error interface {} is %T %T, not uint32 %#v", resp[0], resp[0], resp)
+						break
 					}
+					Goose.Fetch.Logf(5, "Callback of %d", wstrackId)
 					if wstrackId == 0 {
 						evtName = resp[1].(string)
 
@@ -292,13 +310,13 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 							break
 						}
 
-						for _, fn = range pendingEvents[evtName] {
-							parmval, err = mkParms(fn, resppar)
+						for _, fn.Callback = range pendingEvents[evtName] {
+							parmval, err = mkParms(fn.Callback, resppar)
 							if err != nil {
 								Goose.Fetch.Logf(1, "Error %s at %s", err, targetURI)
 								break
 							}
-							go fn.Call(parmval)
+							go fn.Callback.Call(parmval)
 						}
 					} else {
 						if fn, ok = pending[wstrackId]; !ok {
@@ -306,15 +324,27 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 							break
 						}
 
-						parmval, err = mkParms(fn, resp[1:])
-						if err != nil {
-							Goose.Fetch.Logf(1, "Error %s at %s", err, targetURI)
+						httpStat, ok = resp[1].(uint32)
+						if !ok {
+							Goose.Fetch.Logf(1, "Error %s (%T) at %s", ErrProtocol, resp[1], targetURI)
 							break
 						}
 
-						//                  Goose.Fetch.Logf(5,"%#v(%#v)", fn, parmval[0])
-						//                  Goose.Fetch.Logf(5,"%#v(%#v)", fn, parmval)
-						go fn.Call(parmval)
+						if int(httpStat)>=http.StatusBadRequest { // Check for error function
+							Goose.Fetch.Logf(5, "Fail Callback of %d", wstrackId)
+							go fn.FailCallback(int(httpStat))
+						} else {
+							Goose.Fetch.Logf(5, "Callback of %d => %#v", wstrackId, resp[1:])
+							parmval, err = mkParms(fn.Callback, resp[1:])
+							if err != nil {
+								Goose.Fetch.Logf(1, "Error %s at %s", err, targetURI)
+								break
+							}
+
+							Goose.Fetch.Logf(5, "Callback of %d => parmval=%#v", wstrackId, parmval)
+							go fn.Callback.Call(parmval)
+							Goose.Fetch.Logf(5, "Callback of %d returned", wstrackId)
+						}
 					}
 
 				}

@@ -42,15 +42,21 @@ type Decoder interface {
 }
 
 type OperationT struct {
-	Path       string
-	Schemes    []string
-	Encoder    Encoder
-	Decoder    Decoder
-	PathParm   []*ParameterT
-	HeaderParm []*ParameterT
-	QueryParm  []*ParameterT
-	BodyParm   *ParameterT
-	FormParm   []*ParameterT
+	Path             string
+	Schemes        []string
+	Encoder          Encoder
+	Decoder          Decoder
+	PathParm      []*ParameterT
+	HeaderParm    []*ParameterT
+	QueryParm     []*ParameterT
+	BodyParm        *ParameterT
+	FormParm      []*ParameterT
+   SubOperations map[string]*SubOperationT
+}
+
+type SubOperationT struct {
+	Id         string
+	Parms   []*ParameterT
 }
 
 type WSClientT struct {
@@ -70,15 +76,21 @@ type WSClientT struct {
 }
 
 type WSockClientT struct {
+   SubOperations map[string]*SubOperationT
 	receiver  chan []interface{}
 	cli2srvch chan WSockRequest
 	bindch    chan WSockRequest
 }
 
+type CallbackT struct {
+	Callback     reflect.Value
+   FailCallback func(int)
+}
+
 type WSockRequest struct {
 	SubOperation string
 	Params       []interface{}
-	Callback     reflect.Value
+   CallbackT
 }
 
 /*
@@ -258,6 +270,7 @@ type WSDLStruct struct {
 type GooseG struct {
 	New   goose.Alert
 	Fetch goose.Alert
+   Set   goose.Alert
 }
 
 /*
@@ -286,6 +299,9 @@ var ErrFetchingContract error = errors.New("Error fetching contract")
 var ErrUnknownMethod error = errors.New("Error unknown method")
 var ErrUnknownKind error = errors.New("Err unknown kind")
 var ErrUnknownOperation error = errors.New("Err unknown operation")
+var ErrNilHandle error = errors.New("Err nil handle")
+var ErrProtocol error = errors.New("Err protocol syntax error")
+var ErrServer error = errors.New("Err on server")
 var ErrUnknownMimeType error = errors.New("Err unknown mimetype")
 var ErrWrite error = errors.New("Err writing stream")
 var ErrBuffer error = errors.New("Err writing buffer")
