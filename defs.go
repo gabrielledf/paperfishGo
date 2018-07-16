@@ -1,26 +1,33 @@
 package paperfishGo
 
 import (
-	"bytes"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/xml"
-	"errors"
-	"github.com/luisfurquim/goose"
-	"io"
-	"net/http"
-	"reflect"
+   "io"
+   "time"
+   "bytes"
+   "errors"
+   "reflect"
+   "net/http"
+   "crypto/tls"
+   "crypto/x509"
+   "encoding/xml"
+   "github.com/luisfurquim/goose"
 )
 
-//type Callback func(...interface{}) // status, <param, ...>
+type XsdSymT struct {
+   reflect.Type
+   name string
+   xsdref interface{}
+}
+
+type XsdSymTabT map[string]*XsdSymT
 
 type ParameterT struct {
-	Name string
-	Kind reflect.Kind
+   Name string
+   Kind reflect.Kind
 }
 
 type TextHnd struct {
-	charset string
+   charset string
 }
 type JsonHnd struct{}
 type XmlHnd struct{}
@@ -28,69 +35,76 @@ type FormURLHnd struct{}
 type FormDataHnd struct{}
 type BinaryHnd struct{}
 type Base64Hnd struct{}
+type SoapLiteralHnd struct {
+   input *ParameterT
+   output *ParameterT
+   symtab XsdSymTabT
+}
 
 type Writer struct {
-	buf *bytes.Buffer
+   buf *bytes.Buffer
 }
 
 type Encoder interface {
-	Encode(output *bytes.Buffer, name string, val interface{}, isTail bool) error
+   Encode(output *bytes.Buffer, name string, val interface{}, isTail bool) error
 }
 
 type Decoder interface {
-	Decode(io.Reader, interface{}) error
+   Decode(io.Reader, interface{}) error
 }
 
 type OperationT struct {
-	Path          string
-	Schemes       []string
-	Encoder       Encoder
-	Decoder       Decoder
-	PathParm      []*ParameterT
-	HeaderParm    []*ParameterT
-	QueryParm     []*ParameterT
-	BodyParm      *ParameterT
-	FormParm      []*ParameterT
-	SubOperations map[string]*SubOperationT
+   Path          string
+   Schemes       []string
+   Encoder       Encoder
+   Decoder       Decoder
+   PathParm      []*ParameterT
+   HeaderParm    []*ParameterT
+   QueryParm     []*ParameterT
+   BodyParm      *ParameterT
+   FormParm      []*ParameterT
+   SubOperations map[string]*SubOperationT
 }
 
 type SubOperationT struct {
-	Id    string
-	Parms []*ParameterT
+   Id    string
+   Parms []*ParameterT
 }
 
 type WSClientT struct {
-	Host             string
-	BasePath         string
-	Schemes          []string
-	Encoder          Encoder
-	Decoder          Decoder
-	Client           *http.Client
-	GetOperation     map[string]*OperationT
-	PostOperation    map[string]*OperationT
-	PutOperation     map[string]*OperationT
-	DeleteOperation  map[string]*OperationT
-	OptionsOperation map[string]*OperationT
-	HeadOperation    map[string]*OperationT
-	PatchOperation   map[string]*OperationT
+   Host             string
+   BasePath         string
+   Binding          string
+   Schemes          []string
+   symtab           XsdSymTabT
+   Encoder          Encoder
+   Decoder          Decoder
+   Client           *http.Client
+   GetOperation     map[string]*OperationT
+   PostOperation    map[string]*OperationT
+   PutOperation     map[string]*OperationT
+   DeleteOperation  map[string]*OperationT
+   OptionsOperation map[string]*OperationT
+   HeadOperation    map[string]*OperationT
+   PatchOperation   map[string]*OperationT
 }
 
 type WSockClientT struct {
-	SubOperations map[string]*SubOperationT
-	receiver      chan []interface{}
-	cli2srvch     chan WSockRequest
-	bindch        chan WSockRequest
+   SubOperations map[string]*SubOperationT
+   receiver      chan []interface{}
+   cli2srvch     chan WSockRequest
+   bindch        chan WSockRequest
 }
 
 type CallbackT struct {
-	Callback     reflect.Value
-	FailCallback func(int)
+   Callback     reflect.Value
+   FailCallback func(int)
 }
 
 type WSockRequest struct {
-	SubOperation string
-	Params       []interface{}
-	CallbackT
+   SubOperation string
+   Params       []interface{}
+   CallbackT
 }
 
 /*
@@ -109,181 +123,207 @@ type WsdlT struct {
 }
 */
 
-//Created only to casting the variables inside customized Unmarshal methods to go on with xml.enconding Unmarshal
+//Created only to cast the variables inside customized XML Unmarshal methods
 type GoUnmarshal WSDLStruct
 type GoUnmarshalSchema SchemaT
 type GoUnmarshalMessage Message
 
 //TODO: fazer algum processamento para preencher os vetores de parâmetros a partir do nome das mensagens
 type Message struct {
-	Name             string `xml:"message,attr"`
-	Namespace        map[string]string
-	NamespaceReverse map[string]string
-	//InputParameters    []ParametersT
-	//OutputParameters   []ParametersT
+   Name             string `xml:"message,attr"`
+   Namespace        map[string]string
+   NamespaceReverse map[string]string
+   //InputParameters    []ParametersT
+   //OutputParameters   []ParametersT
 }
 
 type ExtensionBaseT struct {
-	Base     string     `xml:"base,attr"`
-	Sequence []ElementT `xml:"sequence>element"`
+   Base     string     `xml:"base,attr"`
+   Sequence []ElementT `xml:"sequence>element"`
+}
+
+type AttributeT struct {
+   Name string `xml:"name,attr"`
+   Type string `xml:"type,attr"`
+   Use  string `xml:"use,attr"`
 }
 
 type ComplexTypeT struct {
-	Name          string           `xml:"name,attr"`
-	Sequence      []ElementT       `xml:"sequence>element"`
-	ExtensionBase []ExtensionBaseT `xml:"complexContent>extension"`
+   Name          string           `xml:"name,attr"`
+   Sequence      []ElementT       `xml:"sequence>element"`
+   ExtensionBase []ExtensionBaseT `xml:"complexContent>extension"`
+   Attribute     []AttributeT     `xml:"attribute"`
 }
 
 type EnumerationT struct {
-	Value string `xml:"value,attr"`
+   Value string `xml:"value,attr"`
 }
 
 type RestrictionBaseT struct {
-	Base        string         `xml:"base,attr"`
-	Enumeration []EnumerationT `xml:"enumeration"`
+   Base        string         `xml:"base,attr"`
+   Enumeration []EnumerationT `xml:"enumeration"`
+}
+
+type ListT struct {
+   ItemType string `xml:"itemType,attr"`
 }
 
 type SimpleTypeT struct {
-	Name            string           `xml:"name,attr"`
-	RestrictionBase RestrictionBaseT `xml:"restriction"`
+   Name            string           `xml:"name,attr"`
+   RestrictionBase RestrictionBaseT `xml:"restriction"`
+   List            ListT            `xml:"list"`
 }
 
 //TODO: fazer algum processamento para a partir da string nillable (true ou false) para boolean go
 type ElementT struct {
-	Name          string         `xml:"name,attr"`
-	Type          string         `xml:"type,attr"`
-	Documentation string         `xml:"annotation>documentation"`
-	Nillable      string         `xml:"nillable,attr"`
-	MaxOccurs     string         `xml:"maxOccurs,attr"`
-	MinOccurs     string         `xml:"minOccurs,attr"`
-	ComplexTypes  []ComplexTypeT `xml:"complexType"`
+   Name          string         `xml:"name,attr"`
+   Type          string         `xml:"type,attr"`
+   Documentation string         `xml:"annotation>documentation"`
+   Nillable      string         `xml:"nillable,attr"`
+   MaxOccurs     string         `xml:"maxOccurs,attr"`
+   MinOccurs     string         `xml:"minOccurs,attr"`
+   ComplexTypes  []ComplexTypeT `xml:"complexType"`
 }
 
 type ImportT struct {
-	SchemaLocation string `xml:"schemaLocation,attr"`
-	NameSpace      string `xml:"namespace,attr"`
+   SchemaLocation string `xml:"schemaLocation,attr"`
+   NameSpace      string `xml:"namespace,attr"`
 }
 
 //TODO: fazer algum processamento para quebrar a string e pegar os valores corretos para o alias e para o value
 type XMLnsT struct {
-	Alias string
-	Value string `xml:"xmlns,attr"`
+   Alias string
+   Value string `xml:"xmlns,attr"`
 }
 
 type SchemaT struct {
-	AttributeFormDefault string     `xml:"attributeFormDefault,attr"`
-	ElementFormDefault   string     `xml:"elementFormDefault,attr"`
-	TargetNamespace      string     `xml:"targetNamespace,attr"`
-	XMLAttr              []xml.Attr `xml:",any"`
-	Namespace            map[string]string
-	NamespaceReverse     map[string]string
-	Import               []ImportT      `xml:"import"`
-	Elements             []ElementT     `xml:"element"`
-	SimpleTypes          []SimpleTypeT  `xml:"simpleType"`
-	ComplexTypes         []ComplexTypeT `xml:"complexType"`
+   AttributeFormDefault string     `xml:"attributeFormDefault,attr"`
+   ElementFormDefault   string     `xml:"elementFormDefault,attr"`
+   TargetNamespace      string     `xml:"targetNamespace,attr"`
+   XMLAttr              []xml.Attr `xml:",any,attr"`
+   Namespace            map[string]string
+   NamespaceReverse     map[string]string
+   Import               []ImportT      `xml:"import"`
+   Elements             []ElementT     `xml:"element"`
+   SimpleTypes          []SimpleTypeT  `xml:"simpleType"`
+   ComplexTypes         []ComplexTypeT `xml:"complexType"`
 }
 
 type Operation struct {
-	Name   string  `xml:"name,attr"`
-	Input  Message `xml:"input"`
-	Output Message `xml:"output"`
+   Name   string  `xml:"name,attr"`
+   Input  Message `xml:"input"`
+   Output Message `xml:"output"`
 }
 
 type ProtocolBinding struct {
-	Style     string `xml:"style,attr"`
-	Transport string `xml:"transport,attr"`
+   Style     string `xml:"style,attr"`
+   Transport string `xml:"transport,attr"`
 
-	Verb string `xml:"verb,attr"`
+   Verb string `xml:"verb,attr"`
 }
 
 type HTTPContent struct {
-	Type string `xml:"type,attr"`
+   Type string `xml:"type,attr"`
 }
 
 type SoapBody struct {
-	Use  string `xml:"use,attr"`
-	Type string `xml:"type,attr"`
+   Use  string `xml:"use,attr"`
+   Type string `xml:"type,attr"`
 }
 
 type OperationBinding struct {
-	SoapAction string `xml:"soapAction,attr"`
-	Style      string `xml:"style,attr"`
+   SoapAction string `xml:"soapAction,attr"`
+   Style      string `xml:"style,attr"`
 
-	Location string `xml:"location,attr"`
+   Location string `xml:"location,attr"`
 }
 
 type ConcreteOperationT struct {
-	Name      string           `xml:"name,attr"`
-	Operation OperationBinding `xml:"operation"`
+   Name      string           `xml:"name,attr"`
+   Operation OperationBinding `xml:"operation"`
 
-	InputSOAP  SoapBody `xml:"input>body"`
-	OutputSOAP SoapBody `xml:"output>body"`
+   InputSOAP  SoapBody `xml:"input>body"`
+   OutputSOAP SoapBody `xml:"output>body"`
 
-	InputHTTP  HTTPContent `xml:"input>content"`
-	OutputHTTP HTTPContent `xml:"output>content"`
+   InputHTTP  HTTPContent `xml:"input>content"`
+   OutputHTTP HTTPContent `xml:"output>content"`
 }
 
 type BindingT struct {
-	Name              string               `xml:"name,attr"`
-	Type              string               `xml:"type,attr"`
-	Protocol          ProtocolBinding      `xml:"binding"`
-	ConcreteOperation []ConcreteOperationT `xml:"operation"`
+   Name              string               `xml:"name,attr"`
+   Type              string               `xml:"type,attr"`
+   Protocol          ProtocolBinding      `xml:"binding"`
+   ConcreteOperation []ConcreteOperationT `xml:"operation"`
 }
 
 type Address struct {
-	Location string `xml:"location,attr"`
+   Location string `xml:"location,attr"`
 }
 
 type PortT struct {
-	Binding string  `xml:"binding,attr"`
-	Name    string  `xml:"name,attr"`
-	Address Address `xml:"address"`
+   Binding string  `xml:"binding,attr"`
+   Name    string  `xml:"name,attr"`
+   Address Address `xml:"address"`
 }
 
 type Endpoint struct {
-	Name string  `xml:"name,attr"`
-	Port []PortT `xml:"port"`
+   Name string  `xml:"name,attr"`
+   Port []PortT `xml:"port"`
 }
 
 type PartT struct {
-	Element string `xml:"element,attr"`
-	Name    string `xml:"name,attr"`
+   Element string `xml:"element,attr"`
+   Name    string `xml:"name,attr"`
 }
 
 type MessageT struct {
-	Name string `xml:"name,attr"`
-	Part PartT  `xml:"part"`
+   Name string `xml:"name,attr"`
+   Part PartT  `xml:"part"`
 }
 
 type WSDLStruct struct {
-	TargetName       string `xml:"targetNamespace,attr"`
-	Namespace        map[string]string
-	NamespaceReverse map[string]string
-	Documentation    string      `xml:"documentation"`
-	Types            []SchemaT   `xml:"types>schema"`
-	Message          []MessageT  `xml:"message"`
-	PortType         []Operation `xml:"portType>operation"`
-	Binding          []BindingT  `xml:"binding"`
-	Service          []Endpoint  `xml:"service"`
+   TargetNamespace  string      `xml:"targetNamespace,attr"`
+   XMLAttr          []xml.Attr  `xml:",any,attr"`
+   Namespace        map[string]string
+   NamespaceReverse map[string]string
+   Documentation    string      `xml:"documentation"`
+   Message          []MessageT  `xml:"message"`
+   PortType         []Operation `xml:"portType>operation"`
+   Binding          []BindingT  `xml:"binding"`
+   Service          []Endpoint  `xml:"service"`
+   Types            []SchemaT   `xml:"types>schema"`
 }
 
 type GooseG struct {
-	New   goose.Alert
-	Fetch goose.Alert
-	Set   goose.Alert
+   New   goose.Alert
+   Fetch goose.Alert
+   Set   goose.Alert
+   Type  goose.Alert
 }
 
 /*
 type PortT struct {
-	Endpoint string `xml:"location,attr"`
+   Endpoint string `xml:"location,attr"`
 }
 
 type WsdlT struct {
 //   Add PortT `xml:"service>port>address"`
-	clientName string
-	xmlData    WSDLStruct
+   clientName string
+   xmlData    WSDLStruct
 }
 */
+
+
+var iface interface{}
+var typeOfiface reflect.Type = reflect.TypeOf(&iface).Elem()
+var typeOfstring reflect.Type = reflect.TypeOf("")
+var typeOfboolean reflect.Type = reflect.TypeOf(true)
+var typeOfint reflect.Type = reflect.TypeOf(1)
+var typeOffloat reflect.Type = reflect.TypeOf(1.0)
+var typeOfduration reflect.Type = reflect.TypeOf(time.Second)
+var typeOftime reflect.Type = reflect.TypeOf(time.Time{})
+var typeOfBinary reflect.Type = reflect.TypeOf([]byte{})
+
 
 var RootCAs *x509.CertPool
 var CliCerts []tls.Certificate
@@ -297,16 +337,21 @@ var ErrWrongParmType error = errors.New("Wrong parameter type")
 var ErrWrongReturnParmType error = errors.New("Wrong return parameter type")
 var ErrFetchingContract error = errors.New("Error fetching contract")
 var ErrUnknownMethod error = errors.New("Error unknown method")
-var ErrUnknownKind error = errors.New("Err unknown kind")
-var ErrUnknownOperation error = errors.New("Err unknown operation")
+var ErrUnknownKind error = errors.New("Error unknown kind")
+var ErrUnknownOperation error = errors.New("Error unknown operation")
 var ErrNilHandle error = errors.New("Err nil handle")
 var ErrProtocol error = errors.New("Err protocol syntax error")
 var ErrServer error = errors.New("Err on server")
-var ErrUnknownMimeType error = errors.New("Err unknown mimetype")
-var ErrWrite error = errors.New("Err writing stream")
-var ErrBuffer error = errors.New("Err writing buffer")
+var ErrUnknownMimeType error = errors.New("Error unknown mimetype")
+var ErrWrite error = errors.New("Error writing stream")
+var ErrBuffer error = errors.New("Error writing buffer")
+var ErrUndetectableType error = errors.New("Error undetectable type")
+var ErrEmptyString error = errors.New("Error empty string")
+var ErrBadAddressLocationOfService error = errors.New("Bad address location of service")
 
 var Fake bool // Se true, não vai acessar web service, vai usar arquivos XML locais
 
 //Whenever you add a new struct or new field to handle a xml tag, you must add the tag name in TagsT slice
 var TagsT []string
+
+var IndentPrefix string = "   "

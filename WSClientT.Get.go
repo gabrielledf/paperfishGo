@@ -202,9 +202,7 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
 					*/
 				}
 
-				Goose.Fetch.Logf(4, "Received from websocket at %s: got [%#v]", targetURI, message[1])
 				WSockClient.receiver <- message
-				Goose.Fetch.Logf(3, "Sent to select loop")
 			}
 		}()
 

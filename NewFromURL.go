@@ -7,7 +7,7 @@ import (
 )
 
 //func NewFromURL(url string, client *http.Client) (map[string]Operation, error) {
-func NewFromURL(uri string, client *http.Client) (*WSClientT, error) {
+func NewFromURL(uri string, client *http.Client) ([]WSClientT, error) {
 	var err error
 	var resp *http.Response
 
