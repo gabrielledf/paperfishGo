@@ -13,6 +13,7 @@ func (ws WSClientT) Types() string {
    var fld ElementT
    var sym *XsdSymT
    var fldType string
+   var newFldType string
    var fldname string
    var attr AttributeT
    var ns string
@@ -75,8 +76,8 @@ func (ws WSClientT) Types() string {
                      continue
                   }
                   fldType += "T"
-               } else if fldType == "boolean" {
-                  fldType = "bool"
+               } else if _, ok = xsd2go[fldType]; ok {
+                  fldType = xsd2go[fldType]
                }
 
                ret += "type " + name + " " + fldType + "\n\n"
@@ -102,6 +103,8 @@ func (ws WSClientT) Types() string {
                         continue
                      }
                      fldType += "T"
+                  } else if _, ok = xsd2go[fldType]; ok {
+                     fldType = xsd2go[fldType]
                   }
 
                   tag = bName(attr.Name)
@@ -122,12 +125,21 @@ func (ws WSClientT) Types() string {
 
                   fldType = bName(fld.Type)
                   if ws.symtab[fldType].xsdref != nil {
-                     fldType, err = Exported(bName(fld.Type))
+                     newFldType, err = Exported(bName(fld.Type))
                      if err != nil {
                         Goose.Type.Logf(1,"Error exporting fieldtype %s: %s", tag, err)
                         continue
                      }
-                     fldType += "T"
+                     newFldType += "T"
+
+                     if fld.MaxOccurs != "" {
+                        newFldType = "[]" + newFldType
+                     } else if _, ok = ws.symtab[fldType].xsdref.(*ComplexTypeT) ; ok {
+                        newFldType = "*" + newFldType
+                     }
+                     fldType = newFldType
+                  } else if _, ok = xsd2go[fldType]; ok {
+                     fldType = xsd2go[fldType]
                   }
 
                   tag = bName(fld.Name)
@@ -135,12 +147,6 @@ func (ws WSClientT) Types() string {
                      tag +=  ",omitempty"
                   }
                   tag = " `xml:\"" + ns + tag + "\" json:\"" + tag + "\"`"
-
-                  if fld.MaxOccurs != "" {
-                     fldType = "[]" + fldType
-                  } else {
-                     fldType = "*" + fldType
-                  }
 
                   ret += IndentPrefix +
                          fldname + " " +

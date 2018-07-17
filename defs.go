@@ -374,3 +374,37 @@ var TagsT []string
 
 var IndentPrefix string = "   "
 var envelope soapEnvelopeT = soapEnvelopeT{Xmlns:"http://schemas.xmlsoap.org/soap/envelope/"}
+
+var xsd2go map[string]string = map[string]string{
+   "anyURI"        : "string",
+   "base64Binary"  : "Base64Binary",
+   "boolean"       : "bool",
+   "byte"          : "int8",
+   "date"          : "time.Time",
+   "dateTime"      : "time.Time",
+   "decimal"       : "float64",
+   "double"        : "float64",
+   "duration"      : "string",
+   "float"         : "float32",
+   "gDay"          : "string",
+   "gMonth"        : "string",
+   "gMonthDay"     : "string",
+   "gYear"         : "string",
+   "gYearMonth"    : "string",
+   "hexBinary"     : "string",
+   "ID"            : "string",
+   "int"           : "int",
+   "integer"       : "int",
+   "language"      : "string",
+   "long"          : "int64",
+   "Name"          : "string",
+   "short"         : "int16",
+   "string"        : "string",
+   "time"          : "time.Time",
+   "unsignedByte"  : "uint8",
+   "unsignedShort" : "uint16",
+   "unsignedInt"   : "uint",
+   "unsignedLong"  : "uint64",
+}
+
+
