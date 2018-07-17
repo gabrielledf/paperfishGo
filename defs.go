@@ -16,6 +16,7 @@ import (
 type XsdSymT struct {
    reflect.Type
    name string
+   ns string
    xsdref interface{}
 }
 
@@ -36,9 +37,24 @@ type FormDataHnd struct{}
 type BinaryHnd struct{}
 type Base64Hnd struct{}
 type SoapLiteralHnd struct {
-   input *ParameterT
-   output *ParameterT
+   ws *WSClientT
    symtab XsdSymTabT
+}
+
+type SoapData interface {
+   SetName(nm string, attr []xml.Attr) (interface{})
+}
+
+type SoapBodyT struct {
+   XMLName xml.Name
+   Data interface{}
+}
+
+type soapEnvelopeT struct {
+   XMLName xml.Name `xml:"SOAP-ENV:Envelope"`
+   Xmlns string `xml:"xmlns:SOAP-ENV,attr"`
+   Header string `xml:"SOAP-ENV:Header"`
+   Body interface{} `xml:"SOAP-ENV:Body"`
 }
 
 type Writer struct {
@@ -77,6 +93,8 @@ type WSClientT struct {
    Binding          string
    Schemes          []string
    symtab           XsdSymTabT
+   TargetNamespace  string
+   Xmlns            map[string]string
    Encoder          Encoder
    Decoder          Decoder
    Client           *http.Client
@@ -355,3 +373,4 @@ var Fake bool // Se true, não vai acessar web service, vai usar arquivos XML lo
 var TagsT []string
 
 var IndentPrefix string = "   "
+var envelope soapEnvelopeT = soapEnvelopeT{Xmlns:"http://schemas.xmlsoap.org/soap/envelope/"}

@@ -1,7 +1,6 @@
 package paperfishGo
 
 import (
-//   "os"
    "io"
    "fmt"
    "bytes"
@@ -130,54 +129,62 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
       // Before parsing the types we must list all of them because they may be
       // defined in any order, despite of their dependences
 
-		if wsdl.Namespace == nil {
-			wsdl.Namespace = map[string]string{}
-		}
-		if wsdl.NamespaceReverse == nil {
-			wsdl.NamespaceReverse = map[string]string{}
-		}
-		for _, ns := range wsdl.XMLAttr {
-			if strings.ToLower(ns.Name.Space) == "xmlns" {
-				wsdl.Namespace[ns.Name.Local] = ns.Value
-				wsdl.NamespaceReverse[ns.Value] = ns.Name.Local
-			}
-			if ns.Name.Space=="" && strings.ToLower(ns.Name.Local)=="xmlns" {
-				wsdl.TargetNamespace = ns.Value
-			}
-		}
+      if wsdl.Namespace == nil {
+         wsdl.Namespace = map[string]string{}
+      }
+      if wsdl.NamespaceReverse == nil {
+         wsdl.NamespaceReverse = map[string]string{}
+      }
+      for _, ns := range wsdl.XMLAttr {
+         if strings.ToLower(ns.Name.Space) == "xmlns" {
+            wsdl.Namespace[ns.Name.Local] = ns.Value
+            wsdl.NamespaceReverse[ns.Value] = ns.Name.Local
+         }
+         if ns.Name.Space=="" && strings.ToLower(ns.Name.Local)=="xmlns" {
+            wsdl.TargetNamespace = ns.Value
+         }
+      }
 
-		Goose.New.Logf(0,"_tns: %#v", wsdl.TargetNamespace)
-		Goose.New.Logf(0,"_ns: %#v", wsdl.Namespace)
-		Goose.New.Logf(0,"_nsr: %#v", wsdl.NamespaceReverse)
+      Goose.New.Logf(0,"_tns: %#v", wsdl.TargetNamespace)
+      Goose.New.Logf(0,"_ns: %#v", wsdl.Namespace)
+      Goose.New.Logf(0,"_nsr: %#v", wsdl.NamespaceReverse)
 
       for i, t = range wsdl.Types {
          for j, s = range t.SimpleTypes {
-            xsdSymTab[s.Name] = &XsdSymT{xsdref: &wsdl.Types[i].SimpleTypes[j]}
+            xsdSymTab[s.Name] = &XsdSymT{
+               xsdref: &wsdl.Types[i].SimpleTypes[j],
+               name: s.Name,
+               ns: t.TargetNamespace,
+            }
          }
          for j, c = range t.ComplexTypes {
-            xsdSymTab[c.Name] = &XsdSymT{xsdref: &wsdl.Types[i].ComplexTypes[j]}
+            xsdSymTab[c.Name] = &XsdSymT{
+               xsdref: &wsdl.Types[i].ComplexTypes[j],
+               name: c.Name,
+               ns: t.TargetNamespace,
+            }
          }
-			Goose.New.Logf(0,"ns")
-			if wsdl.Types[i].Namespace == nil {
-				wsdl.Types[i].Namespace = map[string]string{}
-			}
-			if wsdl.Types[i].NamespaceReverse == nil {
-				wsdl.Types[i].NamespaceReverse = map[string]string{}
-			}
-			for _, ns := range t.XMLAttr {
-				if strings.ToLower(ns.Name.Space) == "xmlns" {
-					wsdl.Types[i].Namespace[ns.Name.Local] = ns.Value
-					wsdl.Types[i].NamespaceReverse[ns.Value] = ns.Name.Local
-				}
-				if ns.Name.Space=="" && strings.ToLower(ns.Name.Local)=="xmlns" {
-					wsdl.Types[i].TargetNamespace = ns.Value
-				}
-			}
+         Goose.New.Logf(0,"ns")
+         if wsdl.Types[i].Namespace == nil {
+            wsdl.Types[i].Namespace = map[string]string{}
+         }
+         if wsdl.Types[i].NamespaceReverse == nil {
+            wsdl.Types[i].NamespaceReverse = map[string]string{}
+         }
+         for _, ns := range t.XMLAttr {
+            if strings.ToLower(ns.Name.Space) == "xmlns" {
+               wsdl.Types[i].Namespace[ns.Name.Local] = ns.Value
+               wsdl.Types[i].NamespaceReverse[ns.Value] = ns.Name.Local
+            }
+            if ns.Name.Space=="" && strings.ToLower(ns.Name.Local)=="xmlns" {
+               wsdl.Types[i].TargetNamespace = ns.Value
+            }
+         }
       }
 
-		Goose.New.Logf(0,"tns: %#v", wsdl.Types[i].TargetNamespace)
-		Goose.New.Logf(0,"ns: %#v", wsdl.Types[i].Namespace)
-		Goose.New.Logf(0,"nsr: %#v", wsdl.Types[i].NamespaceReverse)
+      Goose.New.Logf(0,"tns: %#v", wsdl.Types[i].TargetNamespace)
+      Goose.New.Logf(0,"ns: %#v", wsdl.Types[i].Namespace)
+      Goose.New.Logf(0,"nsr: %#v", wsdl.Types[i].NamespaceReverse)
 
       for _, t = range wsdl.Types {
          for _, s = range t.SimpleTypes {
@@ -223,6 +230,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                }
             }
             ws = append(ws, WSClientT{
+               TargetNamespace:  wsdl.TargetNamespace,
                Client:           client,
                Host:             port.Address.Location[pos:],
                Schemes:          schemes,
@@ -333,8 +341,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
 
                if strings.ToLower(oper.Operation.Style) == "document" {
                   soapenc = &SoapLiteralHnd{
-                     input: ws[i].PostOperation[oper.Name].BodyParm,
-                     output: ws[i].PostOperation[oper.Name].BodyParm,
+                     ws: &ws[i],
                      symtab: xsdSymTab,
                   }
                   if strings.ToLower(oper.InputSOAP.Use) == "literal" {

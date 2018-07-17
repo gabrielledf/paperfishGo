@@ -1,8 +1,8 @@
 package paperfishGo
 
 import (
-	"bytes"
 	"fmt"
+	"bytes"
 	"reflect"
 )
 
@@ -13,6 +13,7 @@ func (ws *WSClientT) prepareBody(op *OperationT, opId string, inputDef []*Parame
 	var val interface{}
 	var err error
 	var isTail bool
+	var kind reflect.Kind
 
 	for _, p = range inputDef {
 		if val, ok = inputValues[p.Name]; !ok {
@@ -27,7 +28,12 @@ func (ws *WSClientT) prepareBody(op *OperationT, opId string, inputDef []*Parame
 
 		Goose.Fetch.Logf(4, "Encoding with %#v", op.Encoder)
 
-		err = op.Encoder.Encode(&postdata, p.Name, fmt.Sprintf("%v", val), isTail)
+		kind = reflect.TypeOf(val).Kind()
+		if kind == reflect.Struct {
+			err = op.Encoder.Encode(&postdata, p.Name, val, isTail)
+		} else {
+			err = op.Encoder.Encode(&postdata, p.Name, fmt.Sprintf("%v", val), isTail)
+		}
 		if err != nil {
 			Goose.Fetch.Logf(1, "%s:%s of %s for %s", ErrBuffer, err, p.Name, opId)
 			return nil, err
