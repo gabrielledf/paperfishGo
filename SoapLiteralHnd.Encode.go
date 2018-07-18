@@ -16,7 +16,7 @@ func (Hand SoapLiteralHnd) Encode(w *bytes.Buffer, nm string, v interface{}, isT
    var xmlns, alias string
 
    fmt.Printf(`<?xml version="1.0" encoding="UTF-8"?>`)
-   fmt.Printf("\n\nxmlnsrev: %#v\n\n", Hand.ws.Xmlns)
+//   fmt.Printf("\n\nxmlnsrev: %#v\n\n", Hand.ws.Xmlns)
 
    attr = make([]xml.Attr,0,len(Hand.ws.Xmlns) + 1)
    for xmlns, alias = range Hand.ws.Xmlns {
@@ -26,13 +26,13 @@ func (Hand SoapLiteralHnd) Encode(w *bytes.Buffer, nm string, v interface{}, isT
       })
    }
    attr = append(attr,xml.Attr{
-      Name: xml.Name{Local: "xmlns:tns"},
+      Name: xml.Name{Local: "xmlns"},
       Value: Hand.ws.TargetNamespace,
    })
 
    //ns = Hand.ws.Xmlns[Hand.ws.TargetNamespace]
    vv = v.(SoapData)
-   vvv = vv.SetName("tns:" + nm, attr)
+   vvv = vv.SetName(nm, attr)
    envelope.Body = SoapBodyT{
       Data: vvv,
    }

@@ -342,6 +342,8 @@ var typeOfduration reflect.Type = reflect.TypeOf(time.Second)
 var typeOftime reflect.Type = reflect.TypeOf(time.Time{})
 var typeOfBinary reflect.Type = reflect.TypeOf([]byte{})
 
+type Base64Binary []byte
+
 
 var RootCAs *x509.CertPool
 var CliCerts []tls.Certificate
@@ -377,7 +379,7 @@ var envelope soapEnvelopeT = soapEnvelopeT{Xmlns:"http://schemas.xmlsoap.org/soa
 
 var xsd2go map[string]string = map[string]string{
    "anyURI"        : "string",
-   "base64Binary"  : "Base64Binary",
+   "base64Binary"  : "paperfishGo.Base64Binary",
    "boolean"       : "bool",
    "byte"          : "int8",
    "date"          : "time.Time",

@@ -5,7 +5,7 @@ import (
 )
 
 
-func (ws WSClientT) Types() string {
+func (ws WSClientT) Types(pkg string) string {
    var ret string
    var err error
    var nm, name string
@@ -24,10 +24,11 @@ func (ws WSClientT) Types() string {
    var xsdref interface{}
    var complxref *ComplexTypeT
    var oper string
+   var impXML, impTime, impPaper bool
+   var hdr string
 
-   if ws.symtab == nil {
-      fmt.Printf("ws==nil\n")
-   } else {
+   if ws.symtab != nil {
+      hdr = "package " + pkg + "\n\n"
       nsrev = map[string]string{}
       for nm, sym = range ws.symtab {
          if sym.xsdref == nil {
@@ -78,12 +79,18 @@ func (ws WSClientT) Types() string {
                   fldType += "T"
                } else if _, ok = xsd2go[fldType]; ok {
                   fldType = xsd2go[fldType]
+                  if fldType == "paperfishGo.Base64Binary" {
+                     impPaper = true
+                  } else if fldType == "time.Time" {
+                     impTime = true
+                  }
                }
 
                ret += "type " + name + " " + fldType + "\n\n"
             case *ComplexTypeT:
                ret += "type " + name + " struct{\n"
                if isMainMesg {
+                  impXML = true
                   ret += "   XMLName xml.Name\n"
                   ret += "   XMLAttr []xml.Attr `xml:\",attr,any\"`\n"
                }
@@ -105,6 +112,11 @@ func (ws WSClientT) Types() string {
                      fldType += "T"
                   } else if _, ok = xsd2go[fldType]; ok {
                      fldType = xsd2go[fldType]
+                     if fldType == "paperfishGo.Base64Binary" {
+                        impPaper = true
+                     } else if fldType == "time.Time" {
+                        impTime = true
+                     }
                   }
 
                   tag = bName(attr.Name)
@@ -140,6 +152,11 @@ func (ws WSClientT) Types() string {
                      fldType = newFldType
                   } else if _, ok = xsd2go[fldType]; ok {
                      fldType = xsd2go[fldType]
+                     if fldType == "paperfishGo.Base64Binary" {
+                        impPaper = true
+                     } else if fldType == "time.Time" {
+                        impTime = true
+                     }
                   }
 
                   tag = bName(fld.Name)
@@ -165,10 +182,22 @@ func (ws WSClientT) Types() string {
          }
       }
 
-      ret += fmt.Sprintf("var xmlns map[string]string = %#v\n\n",nsrev)
-      ret += fmt.Sprintf("var tns string = %#v\n\n",ws.TargetNamespace)
+      ret += fmt.Sprintf("var Xmlns map[string]string = %#v\n\n",nsrev)
+      ret += fmt.Sprintf("var Tns string = %#v\n\n",ws.TargetNamespace)
    }
 
-   return ret
+
+   if impXML  {
+      hdr += `import "encoding/xml"` + "\n\n"
+   }
+   if impTime {
+      hdr += `import "time"` + "\n\n"
+   }
+   if impPaper {
+      hdr += `import "github.com/gabrielledf/paperfishGo"` + "\n\n"
+   }
+
+
+   return hdr + ret
 }
 
