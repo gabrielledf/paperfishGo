@@ -1,10 +1,11 @@
 package paperfishGo
 
 import (
-	"bytes"
 	"io"
-	"net/http"
+	"bytes"
+	"io/ioutil"
 	"strings"
+	"net/http"
 )
 
 func (ws *WSClientT) Post(opName string, input map[string]interface{}, output interface{}) (int, error) {
@@ -19,6 +20,8 @@ func (ws *WSClientT) Post(opName string, input map[string]interface{}, output in
 	var resp *http.Response
 	var postdata []byte
 	var postparm []*ParameterT
+	var buf []byte
+	var soapbuf []string
 
 	if op, ok = ws.PostOperation[opName]; !ok {
 		Goose.Fetch.Logf(1, "%s", ErrUnknownOperation)
@@ -93,9 +96,23 @@ func (ws *WSClientT) Post(opName string, input map[string]interface{}, output in
 		Goose.Fetch.Logf(6, "TID:[%s] Error fetching %s:%s", trackId, opName, err)
 		return 0, err
 	}
-
 	defer resp.Body.Close()
-	err = ws.PostOperation[opName].Decoder.Decode(resp.Body, output)
+
+	buf, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		Goose.Fetch.Logf(6, "TID:[%s] Error fetching response for %s:%s", trackId, opName, err)
+		return 0, err
+	}
+
+	Goose.Fetch.Logf(1, "RESP: %s\n----------\n\n", buf)
+
+	if xopxmlEnvelopRE.Match(buf) {
+		soapbuf = strings.Split(string(buf),"\n")
+		buf = []byte(soapbuf[len(soapbuf)-2])
+		Goose.Fetch.Logf(1, "REBUF: %s\n----------\n\n", buf)
+	}
+
+	err = ws.PostOperation[opName].Decoder.Decode(bytes.NewReader(buf), output)
 	if err != nil && err != io.EOF {
 		Goose.Fetch.Logf(6, "TID:[%s] Error decoding response for %s:%s", trackId, opName, err)
 		return 0, err

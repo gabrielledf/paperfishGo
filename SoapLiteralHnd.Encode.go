@@ -1,32 +1,33 @@
 package paperfishGo
 
 import (
-   "os"
-   "fmt"
    "bytes"
    "encoding/xml"
 )
 
 func (Hand SoapLiteralHnd) Encode(w *bytes.Buffer, nm string, v interface{}, isTail bool) error {
-   var buf []byte
-   var err error
    var vv SoapData
    var vvv interface{}
    var attr []xml.Attr
    var xmlns, alias string
 
-   fmt.Printf(`<?xml version="1.0" encoding="UTF-8"?>`)
-//   fmt.Printf("\n\nxmlnsrev: %#v\n\n", Hand.ws.Xmlns)
+	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>`))
 
-   attr = make([]xml.Attr,0,len(Hand.ws.Xmlns) + 1)
+   attr = make([]xml.Attr,0,len(Hand.ws.Xmlns) + 2)
    for xmlns, alias = range Hand.ws.Xmlns {
       attr = append(attr,xml.Attr{
          Name: xml.Name{Local: "xmlns:" + alias},
          Value: xmlns,
       })
    }
+
    attr = append(attr,xml.Attr{
       Name: xml.Name{Local: "xmlns"},
+      Value: Hand.ws.TargetNamespace,
+   })
+
+   attr = append(attr,xml.Attr{
+      Name: xml.Name{Local: "TargetNamespace"},
       Value: Hand.ws.TargetNamespace,
    })
 
@@ -36,15 +37,6 @@ func (Hand SoapLiteralHnd) Encode(w *bytes.Buffer, nm string, v interface{}, isT
    envelope.Body = SoapBodyT{
       Data: vvv,
    }
-   buf, err = xml.Marshal(envelope)
-   if err != nil {
-      Goose.Fetch.Logf(0,"Error marshaling v: %s",err)
-      os.Exit(0)
-   }
 
-   fmt.Printf("%s",buf)
-
-
-   os.Exit(0)
-   return xml.NewEncoder(Writer{buf: w}).Encode(v)
+   return xml.NewEncoder(Writer{buf: w}).Encode(envelope)
 }

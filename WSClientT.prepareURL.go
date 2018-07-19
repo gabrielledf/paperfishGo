@@ -14,7 +14,7 @@ func (ws *WSClientT) prepareURL(op *OperationT, opId string, scheme string, inpu
 	var val interface{}
 
 	// targetURI = fmt.Sprintf("%s://%s/%s/%s", scheme, ws.Host, ws.BasePath, op.Path)
-	targetURI = fmt.Sprintf("%s://%s/%s/%s", scheme, op.Path)
+	targetURI = fmt.Sprintf("%s://%s", scheme, op.Path)
 
 	for _, p = range inputDef {
 		if val, ok = inputValues[p.Name]; !ok {

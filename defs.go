@@ -5,6 +5,7 @@ import (
    "time"
    "bytes"
    "errors"
+   "regexp"
    "reflect"
    "net/http"
    "crypto/tls"
@@ -50,11 +51,20 @@ type SoapBodyT struct {
    Data interface{}
 }
 
+/*
 type soapEnvelopeT struct {
    XMLName xml.Name `xml:"SOAP-ENV:Envelope"`
    Xmlns string `xml:"xmlns:SOAP-ENV,attr"`
    Header string `xml:"SOAP-ENV:Header"`
    Body interface{} `xml:"SOAP-ENV:Body"`
+}
+*/
+
+type soapEnvelopeT struct {
+   XMLName xml.Name `xml:"soapenv:Envelope"`
+   Xmlns string `xml:"xmlns:soapenv,attr"`
+   Header string `xml:"soapenv:Header"`
+   Body interface{} `xml:"soapenv:Body"`
 }
 
 type Writer struct {
@@ -409,4 +419,4 @@ var xsd2go map[string]string = map[string]string{
    "unsignedLong"  : "uint64",
 }
 
-
+var xopxmlEnvelopRE *regexp.Regexp = regexp.MustCompile(`(?m:^Content-Type:)`)
