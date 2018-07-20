@@ -2,19 +2,27 @@ package paperfishGo
 
 import (
    "io"
+   "strings"
+   "io/ioutil"
    "encoding/xml"
 )
 
 func (Hand SoapLiteralHnd) Decode(r io.Reader, v interface{}) error {
-   var vv SoapData
-   var vvv interface{}
-   var envelope soapEnvelopeT = soapEnvelopeT{Xmlns:"http://schemas.xmlsoap.org/soap/envelope/"}
+   var err error
+   var buf []byte
 
-   vv = v.(SoapData)
-   vvv = vv.SetName(nm, nil)
-   envelope.Body = SoapBodyT{
-      Data: v,
+   if Hand.Conv != nil {
+      buf, err = ioutil.ReadAll(r)
+      if err != nil {
+         Goose.Fetch.Logf(1,"Error fetching server response: err", err)
+         return err
+      }
+      err = xml.NewDecoder(strings.NewReader(Hand.Conv(string(buf)))).Decode(v)
+   } else {
+      err = xml.NewDecoder(r).Decode(v)
    }
 
-   return xml.NewDecoder(r).Decode(&envelope)
+//   Goose.Fetch.Logf(1,"vvv=%#v",v)
+
+   return err
 }

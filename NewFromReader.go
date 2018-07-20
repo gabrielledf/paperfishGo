@@ -49,8 +49,10 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
    var schemes []string
    var operName string
    var mName string
-   var mesgName string
-   var elemName string
+   var inMesgName string
+   var outMesgName string
+   var inElemName string
+   var outElemName string
    var operIndex int
    var mesgIndex int
    var typ string
@@ -277,7 +279,8 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                for operIndex = 0; operIndex < len(wsdl.PortType); operIndex++ {
                   operName = bName(wsdl.PortType[operIndex].Name)
                   if operName == oper.Name {
-                     mesgName = bName(wsdl.PortType[operIndex].Input.Name)
+                     inMesgName = bName(wsdl.PortType[operIndex].Input.Name)
+                     outMesgName = bName(wsdl.PortType[operIndex].Output.Name)
                      break
                   }
                }
@@ -287,33 +290,45 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                   return nil, err
                }
 
+					inElemName = ""
+					outElemName = ""
                for mesgIndex = 0; mesgIndex < len(wsdl.Message); mesgIndex++ {
                   mName = bName(wsdl.Message[mesgIndex].Name)
-                  if mName == mesgName {
-                     elemName = bName(wsdl.Message[mesgIndex].Part.Element)
-                     break
+                  if mName == inMesgName {
+                     inElemName = bName(wsdl.Message[mesgIndex].Part.Element)
                   }
+                  if mName == outMesgName {
+                     outElemName = bName(wsdl.Message[mesgIndex].Part.Element)
+                  }
+                  if inElemName!="" && outElemName!="" {
+							break
+						}
                }
 
-               if mesgIndex == len(wsdl.Message) {
-                  Goose.New.Logf(1, "Error no message %s found on messages", mesgName)
-                  return nil, err
+					if inElemName == "" {
+                  Goose.New.Logf(1, "Error no element found on input message %s", inMesgName)
+                  return nil, ErrNoElementFoundOnMessage
                }
 
-               Goose.New.Logf(1, "found %s on message part elements ", elemName)
+					if outElemName == "" {
+                  Goose.New.Logf(1, "Error no element found on output message %s", outMesgName)
+                  return nil, ErrNoElementFoundOnMessage
+               }
+
+               Goose.New.Logf(2, "found %s and %s types on message part elements ", inElemName, outElemName)
                /*
                   if err != nil {
                      Goose.New.Logf(1, "Ignoring operation %s.%s.%s: %s", method, operation.OperationId, swaggerParm.Name, err)
                   }
                */
 
-               Goose.New.Logf(1, "-----------------> %d - %s", len(wsdl.Types), elemName)
+               Goose.New.Logf(1, "-----------------> %d - %s / %s", len(wsdl.Types), inElemName, outElemName)
                for _, t = range wsdl.Types {
                   for _, e = range t.Elements {
-                     if e.Name == elemName {
-                        Goose.New.Logf(1, "t.ElementName: %s", e.Name)
+                     if e.Name == inElemName {
+                        Goose.New.Logf(1, "input t.ElementName: %s", e.Name)
                         typ = bName(e.Type)
-                        Goose.New.Logf(1, "elemName: %s - type: %s - xsdSymTab[e.Type]: %#v", elemName, e.Type, xsdSymTab[typ])
+                        Goose.New.Logf(1, "inElemName: %s - type: %s - xsdSymTab[e.Type]: %#v", inElemName, e.Type, xsdSymTab[typ])
                         ws[i].PostOperation[oper.Name].BodyParm = &ParameterT{
                            Name: wsdl.PortType[operIndex].Name,
                            Kind: xsdSymTab[typ].Type.Kind(),
@@ -322,9 +337,27 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                            Type: xsdSymTab[typ].Type,
                            xsdref: xsdSymTab[typ].xsdref,
                         }
-                        break
+                        ws[i].PostOperation[oper.Name].inMesg = typ
+                        inElemName = ""
                      }
+                     if e.Name == outElemName {
+                        Goose.New.Logf(1, "output t.ElementName: %s", e.Name)
+                        typ = bName(e.Type)
+                        Goose.New.Logf(1, "outElemName: %s - type: %s - xsdSymTab[e.Type]: %#v", outElemName, e.Type, xsdSymTab[typ])
+                        xsdSymTab[e.Name] = &XsdSymT{
+                           Type: xsdSymTab[typ].Type,
+                           xsdref: xsdSymTab[typ].xsdref,
+                        }
+                        ws[i].PostOperation[oper.Name].outMesg = outElemName
+                        outElemName = ""
+                     }
+                     if inElemName=="" && outElemName=="" {
+								break
+							}
                   }
+						if inElemName=="" && outElemName=="" {
+							break
+						}
 /*
                   for _, c = range t.ComplexTypes {
                      Goose.New.Logf(1, "c.Name: %#v", c.Name)

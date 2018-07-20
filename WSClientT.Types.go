@@ -21,9 +21,8 @@ func (ws WSClientT) Types(pkg string) string {
    var nsrev map[string]string
    var lastns int
    var isMainMesg bool
-   var xsdref interface{}
-   var complxref *ComplexTypeT
-   var oper string
+   var isOutputMesg bool
+   var oper *OperationT
    var impXML, impTime, impPaper bool
    var hdr string
 
@@ -37,18 +36,22 @@ func (ws WSClientT) Types(pkg string) string {
          Goose.Type.Logf(1,"sym.Name: %s", nm)
 
          isMainMesg = false
-         for oper, _ = range ws.PostOperation {
-            xsdref = ws.symtab[oper].xsdref
-            complxref, ok = xsdref.(*ComplexTypeT)
-            if !ok {
-               continue
-            }
-            if nm == complxref.Name {
+         isOutputMesg = false
+         for _, oper = range ws.PostOperation {
+            Goose.Type.Logf(1,"in: %s, out: %s", oper.inMesg, oper.outMesg)
+            if nm == oper.inMesg {
                isMainMesg = true
+               break
+            }
+            if nm == oper.outMesg {
+               isOutputMesg = true
                break
             }
          }
 
+         for _, oper = range ws.PostOperation {
+            Goose.Type.Logf(1,"in: %s, out: %s", oper.inMesg, oper.outMesg)
+         }
 
          name, err = Exported(nm)
          if err != nil {
@@ -163,7 +166,11 @@ func (ws WSClientT) Types(pkg string) string {
                   if fld.Nillable == "true" {
                      tag +=  ",omitempty"
                   }
-                  tag = " `xml:\"" + ns + tag + "\" json:\"" + tag + "\"`"
+                  if isOutputMesg {
+                     tag = " `xml:\"Body>" + nm + ">" + tag + "\" json:\"" + tag + "\"`"
+                  } else {
+                     tag = " `xml:\"" + ns + tag + "\" json:\"" + tag + "\"`"
+                  }
 
                   ret += IndentPrefix +
                          fldname + " " +

@@ -40,6 +40,7 @@ type Base64Hnd struct{}
 type SoapLiteralHnd struct {
    ws *WSClientT
    symtab XsdSymTabT
+   Conv func(string) string
 }
 
 type SoapData interface {
@@ -380,7 +381,7 @@ var ErrBuffer error = errors.New("Error writing buffer")
 var ErrUndetectableType error = errors.New("Error undetectable type")
 var ErrEmptyString error = errors.New("Error empty string")
 var ErrBadAddressLocationOfService error = errors.New("Bad address location of service")
-
+var ErrNoElementFoundOnMessage error = errors.New("no element found on message")
 var Fake bool // Se true, não vai acessar web service, vai usar arquivos XML locais
 
 //Whenever you add a new struct or new field to handle a xml tag, you must add the tag name in TagsT slice
