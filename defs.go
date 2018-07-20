@@ -84,6 +84,8 @@ type OperationT struct {
    Schemes       []string
    Encoder       Encoder
    Decoder       Decoder
+   inMesg        string
+   outMesg       string
    PathParm      []*ParameterT
    HeaderParm    []*ParameterT
    QueryParm     []*ParameterT
@@ -385,7 +387,6 @@ var Fake bool // Se true, não vai acessar web service, vai usar arquivos XML lo
 var TagsT []string
 
 var IndentPrefix string = "   "
-var envelope soapEnvelopeT = soapEnvelopeT{Xmlns:"http://schemas.xmlsoap.org/soap/envelope/"}
 
 var xsd2go map[string]string = map[string]string{
    "anyURI"        : "string",

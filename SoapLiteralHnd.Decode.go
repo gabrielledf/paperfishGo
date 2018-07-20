@@ -1,10 +1,20 @@
 package paperfishGo
 
 import (
-	"encoding/json"
-	"io"
+   "io"
+   "encoding/xml"
 )
 
 func (Hand SoapLiteralHnd) Decode(r io.Reader, v interface{}) error {
-	return json.NewDecoder(r).Decode(v)
+   var vv SoapData
+   var vvv interface{}
+   var envelope soapEnvelopeT = soapEnvelopeT{Xmlns:"http://schemas.xmlsoap.org/soap/envelope/"}
+
+   vv = v.(SoapData)
+   vvv = vv.SetName(nm, nil)
+   envelope.Body = SoapBodyT{
+      Data: v,
+   }
+
+   return xml.NewDecoder(r).Decode(&envelope)
 }
