@@ -19,7 +19,6 @@ func (ws WSClientT) Types(pkg string) string {
    var ns string
    var ok bool
    var nsrev map[string]string
-   var lastns int
    var isMainMesg bool
    var isOutputMesg bool
    var oper *OperationT
@@ -61,13 +60,8 @@ func (ws WSClientT) Types(pkg string) string {
          name += "T"
          if sym.ns == "" {
             ns = ""
-         } else if ns, ok = nsrev[sym.ns] ; !ok {
-            ns = fmt.Sprintf("ns%d", lastns)
-            nsrev[sym.ns] = ns
-            lastns++
-         }
-         if ns != "" {
-            ns += ":"
+         } else {
+            ns = sym.ns + " "
          }
          switch typ := sym.xsdref.(type) {
 //            case reflect.Array, reflect.Slice:
@@ -123,7 +117,7 @@ func (ws WSClientT) Types(pkg string) string {
                   }
 
                   tag = bName(attr.Name)
-                  tag = " `xml:\"" + ns + tag + ",attr\" json:\"" + tag + "\"`"
+                  tag = " `xml:\"" + tag + ",attr\" json:\"" + tag + "\"`"
 
                   ret += IndentPrefix +
                          fldname + " " +

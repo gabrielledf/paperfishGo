@@ -21,6 +21,7 @@ func mkParms(fn reflect.Value, parms []interface{}) ([]reflect.Value, error) {
 
 	for i = 0; i < len(parms); i++ {
 		parmValue = reflect.New(fnType.In(i))
+		Goose.Fetch.Logf(0, "parm: %d = %#v", i, parmValue)
 		Set(parmValue, reflect.ValueOf(parms[i]))
 		parmValues[i] = parmValue.Elem()
 	}

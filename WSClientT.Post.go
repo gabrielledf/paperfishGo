@@ -104,12 +104,12 @@ func (ws *WSClientT) Post(opName string, input map[string]interface{}, output in
 		return 0, err
 	}
 
-//	Goose.Fetch.Logf(1, "RESP: %s\n----------\n\n", buf)
+	Goose.Fetch.Logf(0, "RESP: %s\n----------\n\n", buf)
 
 	if xopxmlEnvelopRE.Match(buf) {
 		soapbuf = strings.Split(string(buf),"\n")
 		buf = []byte(soapbuf[len(soapbuf)-2])
-//		Goose.Fetch.Logf(1, "REBUF: %s\n----------\n\n", buf)
+		Goose.Fetch.Logf(0, "REBUF: %s\n----------\n\n", buf)
 	}
 
 	err = ws.PostOperation[opName].Decoder.Decode(bytes.NewReader(buf), output)

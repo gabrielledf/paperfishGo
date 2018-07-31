@@ -44,7 +44,7 @@ func Set(v reflect.Value, val reflect.Value) {
 				if val.Kind() == reflect.Interface {
 					val = val.Elem()
 				}
-				Goose.Set.Logf(5, "val %s: %T -> %#v", fld.Name, val.Interface(), val.Interface())
+				Goose.Set.Logf(0, "val %s: %T -> %#v", fld.Name, val.Interface(), val.Interface())
 				valdata = val.MapIndex(reflect.ValueOf(fld.Name))
 				Goose.Set.Logf(5, "Verifying Struct field %s = %#v", fld.Name, valdata)
 				if valdata.Kind() != reflect.Invalid {
