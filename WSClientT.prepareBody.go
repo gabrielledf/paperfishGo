@@ -15,7 +15,9 @@ func (ws *WSClientT) prepareBody(op *OperationT, opId string, inputDef []*Parame
 	var isTail bool
 	var kind reflect.Kind
 
+	Goose.Fetch.Logf(4, "Preparing body")
 	for _, p = range inputDef {
+		Goose.Fetch.Logf(4, "Preparing input %#v", p)
 		if val, ok = inputValues[p.Name]; !ok {
 			Goose.Fetch.Logf(1, "%s %s for %s", ErrParmNotFound, p.Name, opId)
 			return nil, ErrParmNotFound
@@ -42,5 +44,6 @@ func (ws *WSClientT) prepareBody(op *OperationT, opId string, inputDef []*Parame
 		isTail = true
 	}
 
+	Goose.Fetch.Logf(6, "Preparing body done: %s", postdata.Bytes())
 	return postdata.Bytes(), nil
 }

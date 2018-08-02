@@ -14,7 +14,12 @@ func (ws *WSClientT) prepareURL(op *OperationT, opId string, scheme string, inpu
 	var val interface{}
 
 	// targetURI = fmt.Sprintf("%s://%s/%s/%s", scheme, ws.Host, ws.BasePath, op.Path)
-	targetURI = fmt.Sprintf("%s://%s", scheme, op.Path)
+	if scheme == "" {
+		targetURI = op.Path
+	} else {
+		targetURI = fmt.Sprintf("%s://%s", scheme, op.Path)
+	}
+	Goose.Fetch.Logf(6, "targetURI: %s, scheme=%s, op.Path=%s", targetURI, scheme, op.Path)
 
 	for _, p = range inputDef {
 		if val, ok = inputValues[p.Name]; !ok {

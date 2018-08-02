@@ -43,11 +43,13 @@ func (ws *WSClientT) Post(opName string, input map[string]interface{}, output in
 		return 0, err
 	}
 
-	scheme = "http"
+	if op.Path[:4] != "http" {
+		scheme = "http"
 
-	for _, sch = range op.Schemes {
-		if strings.ToLower(sch) == "https" {
-			scheme += "s"
+		for _, sch = range op.Schemes {
+			if strings.ToLower(sch) == "https" {
+				scheme += "s"
+			}
 		}
 	}
 
@@ -75,12 +77,14 @@ func (ws *WSClientT) Post(opName string, input map[string]interface{}, output in
 		return 0, err
 	}
 
+	Goose.Fetch.Logf(1, "Prepared body for %s @ %s: %s", opName, targetURI, postdata)
+
 	req, err = http.NewRequest("POST", targetURI, bytes.NewReader(postdata))
 	if err != nil {
 		return 0, err
 	}
 
-	Goose.Fetch.Logf(6, "TID:[%s] Request:%#v", trackId, req)
+	Goose.Fetch.Logf(0, "TID:[%s] Request:%#v", trackId, req)
 
 	req.Header.Set("Connection", "keep-alive")
 
