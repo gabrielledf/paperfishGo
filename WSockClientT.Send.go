@@ -2,7 +2,7 @@ package paperfishGo
 
 import (
 	"fmt"
-	"net/url"
+	//"net/url"
 	"reflect"
 )
 
@@ -45,7 +45,8 @@ func (wsc *WSockClientT) Send(opName string, params map[string]interface{}, fn i
 		}
 
 		Goose.Fetch.Logf(5, "Adding parm %s.%s=%v", opName, p.Name, val)
-		parms = append(parms, url.QueryEscape(fmt.Sprintf("%v", val)))
+		//parms = append(parms, url.QueryEscape(fmt.Sprintf("%v", val)))
+		parms = append(parms, fmt.Sprintf("%v", val))
 	}
 
 	Goose.Fetch.Logf(4, "Params added")
