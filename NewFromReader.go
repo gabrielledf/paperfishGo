@@ -147,9 +147,9 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
          }
       }
 
-      Goose.New.Logf(0,"_tns: %#v", wsdl.TargetNamespace)
-      Goose.New.Logf(0,"_ns: %#v", wsdl.Namespace)
-      Goose.New.Logf(0,"_nsr: %#v", wsdl.NamespaceReverse)
+      Goose.New.Logf(6,"_tns: %#v", wsdl.TargetNamespace)
+      Goose.New.Logf(6,"_ns: %#v", wsdl.Namespace)
+      Goose.New.Logf(6,"_nsr: %#v", wsdl.NamespaceReverse)
 
       for i, t = range wsdl.Types {
          for j, s = range t.SimpleTypes {
@@ -166,7 +166,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                ns: t.TargetNamespace,
             }
          }
-         Goose.New.Logf(0,"ns")
+         Goose.New.Logf(6,"ns")
          if wsdl.Types[i].Namespace == nil {
             wsdl.Types[i].Namespace = map[string]string{}
          }
@@ -184,9 +184,9 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
          }
       }
 
-      Goose.New.Logf(0,"tns: %#v", wsdl.Types[i].TargetNamespace)
-      Goose.New.Logf(0,"ns: %#v", wsdl.Types[i].Namespace)
-      Goose.New.Logf(0,"nsr: %#v", wsdl.Types[i].NamespaceReverse)
+      Goose.New.Logf(6,"tns: %#v", wsdl.Types[i].TargetNamespace)
+      Goose.New.Logf(6,"ns: %#v", wsdl.Types[i].Namespace)
+      Goose.New.Logf(6,"nsr: %#v", wsdl.Types[i].NamespaceReverse)
 
       for _, t = range wsdl.Types {
          for _, s = range t.SimpleTypes {
@@ -290,8 +290,8 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                   return nil, err
                }
 
-					inElemName = ""
-					outElemName = ""
+               inElemName = ""
+               outElemName = ""
                for mesgIndex = 0; mesgIndex < len(wsdl.Message); mesgIndex++ {
                   mName = bName(wsdl.Message[mesgIndex].Name)
                   if mName == inMesgName {
@@ -301,16 +301,16 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                      outElemName = bName(wsdl.Message[mesgIndex].Part.Element)
                   }
                   if inElemName!="" && outElemName!="" {
-							break
-						}
+                     break
+                  }
                }
 
-					if inElemName == "" {
+               if inElemName == "" {
                   Goose.New.Logf(1, "Error no element found on input message %s", inMesgName)
                   return nil, ErrNoElementFoundOnMessage
                }
 
-					if outElemName == "" {
+               if outElemName == "" {
                   Goose.New.Logf(1, "Error no element found on output message %s", outMesgName)
                   return nil, ErrNoElementFoundOnMessage
                }
@@ -352,12 +352,12 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                         outElemName = ""
                      }
                      if inElemName=="" && outElemName=="" {
-								break
-							}
+                        break
+                     }
                   }
-						if inElemName=="" && outElemName=="" {
-							break
-						}
+                  if inElemName=="" && outElemName=="" {
+                     break
+                  }
 /*
                   for _, c = range t.ComplexTypes {
                      Goose.New.Logf(1, "c.Name: %#v", c.Name)
