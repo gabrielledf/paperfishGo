@@ -315,20 +315,20 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                   return nil, ErrNoElementFoundOnMessage
                }
 
-               Goose.New.Logf(2, "found %s and %s types on message part elements ", inElemName, outElemName)
+               Goose.New.Logf(3, "found %s and %s types on message part elements ", inElemName, outElemName)
                /*
                   if err != nil {
                      Goose.New.Logf(1, "Ignoring operation %s.%s.%s: %s", method, operation.OperationId, swaggerParm.Name, err)
                   }
                */
 
-               Goose.New.Logf(1, "-----------------> %d - %s / %s", len(wsdl.Types), inElemName, outElemName)
+               Goose.New.Logf(3, "-----------------> %d - %s / %s", len(wsdl.Types), inElemName, outElemName)
                for _, t = range wsdl.Types {
                   for _, e = range t.Elements {
                      if e.Name == inElemName {
-                        Goose.New.Logf(1, "input t.ElementName: %s", e.Name)
+                        Goose.New.Logf(4, "input t.ElementName: %s", e.Name)
                         typ = bName(e.Type)
-                        Goose.New.Logf(1, "inElemName: %s - type: %s - xsdSymTab[e.Type]: %#v", inElemName, e.Type, xsdSymTab[typ])
+                        Goose.New.Logf(4, "inElemName: %s - type: %s - xsdSymTab[e.Type]: %#v", inElemName, e.Type, xsdSymTab[typ])
                         ws[i].PostOperation[oper.Name].BodyParm = &ParameterT{
                            Name: wsdl.PortType[operIndex].Name,
                            Kind: xsdSymTab[typ].Type.Kind(),
@@ -341,9 +341,9 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                         inElemName = ""
                      }
                      if e.Name == outElemName {
-                        Goose.New.Logf(1, "output t.ElementName: %s", e.Name)
+                        Goose.New.Logf(4, "output t.ElementName: %s", e.Name)
                         typ = bName(e.Type)
-                        Goose.New.Logf(1, "outElemName: %s - type: %s - xsdSymTab[e.Type]: %#v", outElemName, e.Type, xsdSymTab[typ])
+                        Goose.New.Logf(4, "outElemName: %s - type: %s - xsdSymTab[e.Type]: %#v", outElemName, e.Type, xsdSymTab[typ])
                         xsdSymTab[e.Name] = &XsdSymT{
                            Type: xsdSymTab[typ].Type,
                            xsdref: xsdSymTab[typ].xsdref,
