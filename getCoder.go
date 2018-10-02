@@ -15,7 +15,7 @@ func getCoder(mime []string) (interface{}, error) {
          useFormURL = true
       } else if s == "multipart/form-data" {
          useFormData = true
-      } else if len(s) > 24 && s[:24] == "application/octet-stream" {
+      } else if (s[0]=='*') || (len(s) > 24 && s[:24] == "application/octet-stream") {
          useBinary = true
       }
    }
