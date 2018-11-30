@@ -1,7 +1,7 @@
 package paperfishGo
 
-func getCoder(mime []string) (interface{}, error) {
-   var useJson, useXml, useText, useFormURL, useFormData, useBinary bool
+func GetCoder(mime []string) (interface{}, error) {
+   var useJson, useXml, useText, useFormURL, useFormData, useBinary, useXop bool
    var s string
 
    for _, s = range mime {
@@ -17,6 +17,8 @@ func getCoder(mime []string) (interface{}, error) {
          useFormData = true
       } else if (s[0]=='*') || (len(s) > 24 && s[:24] == "application/octet-stream") {
          useBinary = true
+      } else if s == "application/xop+xml" {
+         useXop = true
       }
    }
 
@@ -36,6 +38,8 @@ func getCoder(mime []string) (interface{}, error) {
       } else {
          return BinaryHnd{}, nil
       }
+   } else if useXop {
+      return XopHnd{}, nil
    }
    return nil, ErrUnknownMimeType
 }

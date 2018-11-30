@@ -17,8 +17,12 @@ func (Hand SoapLiteralHnd) Decode(r io.Reader, v interface{}) error {
          Goose.Fetch.Logf(1,"Error fetching server response: err", err)
          return err
       }
+      Goose.Fetch.Logf(1,"converting %s",buf)
+      Goose.Fetch.Logf(1,"converted to %s",Hand.Conv(string(buf)))
+      Goose.Fetch.Logf(1,"unmarshaling to %#v",v)
       err = xml.NewDecoder(strings.NewReader(Hand.Conv(string(buf)))).Decode(v)
    } else {
+      Goose.Fetch.Logf(1,"not converting")
       err = xml.NewDecoder(r).Decode(v)
    }
 

@@ -123,6 +123,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
          "gMonth":       &XsdSymT{Type: typeOftime},
          "hexBinary":    &XsdSymT{Type: typeOfBinary},
          "base64Binary": &XsdSymT{Type: typeOfBinary},
+         "xop":          &XsdSymT{Type: typeOfBinary},
       }
          //         case "anyURI":
          //         case "QName":
@@ -423,7 +424,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
       ws[0].Schemes = ct.Schemes
 
       // consumes
-      coder, err = getCoder(ct.Consumes)
+      coder, err = GetCoder(ct.Consumes)
       if err != nil {
          Goose.New.Logf(1, "Error parsing 'consumes' global encoding: %s", err)
          return nil, err
@@ -432,7 +433,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
       ws[0].Encoder = coder.(Encoder)
 
       // Produces
-      coder, err = getCoder(ct.Produces)
+      coder, err = GetCoder(ct.Produces)
       if err != nil {
          Goose.New.Logf(1, "Error parsing 'consumes' global encoding: %s", err)
          return nil, err
@@ -451,7 +452,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
             op.Path = fmt.Sprintf("%s/%s/%s", ws[0].Host, ws[0].BasePath, pathname)
 
             // consumes
-            coder, err = getCoder(operation.Consumes)
+            coder, err = GetCoder(operation.Consumes)
             if err != nil {
                Goose.New.Logf(1, "Error parsing 'consumes' global encoding: %s", err)
                return nil, err
@@ -459,7 +460,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
             op.Encoder = coder.(Encoder)
 
             // Produces
-            coder, err = getCoder(operation.Produces)
+            coder, err = GetCoder(operation.Produces)
             if err != nil {
                Goose.New.Logf(1, "Error parsing 'consumes' global encoding: %s", err)
                return nil, err
