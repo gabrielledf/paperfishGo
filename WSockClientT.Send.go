@@ -39,6 +39,8 @@ func (wsc *WSockClientT) Send(opName string, params map[string]interface{}, fn i
 			return ErrParmNotFound
 		}
 
+		Goose.Fetch.Logf(5, "Val type= %s, Val kind= %s, p.Name=%s, p.Kind=%s\n", reflect.TypeOf(val), reflect.TypeOf(val).Kind(), p.Name, p.Kind)
+			
 		if reflect.ValueOf(val).Kind() != p.Kind {
 			Goose.Fetch.Logf(1, "%s %s of %s", ErrWrongParmType, p.Name, opName)
 			return ErrWrongParmType
