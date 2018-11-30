@@ -68,7 +68,7 @@ func (ws WSClientT) Types(pkg string) string {
             case *SimpleTypeT:
                fldType = bName(typ.RestrictionBase.Base)
                if ws.symtab[fldType].xsdref != nil {
-                  fldType, err = Exported(bName(attr.Type))
+                  fldType, err = Exported(bName(attr.Type)) // bug: unitialized var, cut/paste problem
                   if err != nil {
                      Goose.Type.Logf(1,"Error exporting fieldtype %s: %s", tag, err)
                      continue
@@ -76,7 +76,7 @@ func (ws WSClientT) Types(pkg string) string {
                   fldType += "T"
                } else if _, ok = xsd2go[fldType]; ok {
                   fldType = xsd2go[fldType]
-                  if fldType == "paperfishGo.Base64Binary" {
+                  if (fldType == "paperfishGo.Base64Binary") || (fldType == "paperfishGo.Xop")  {
                      impPaper = true
                   } else if fldType == "time.Time" {
                      impTime = true
@@ -109,7 +109,7 @@ func (ws WSClientT) Types(pkg string) string {
                      fldType += "T"
                   } else if _, ok = xsd2go[fldType]; ok {
                      fldType = xsd2go[fldType]
-                     if fldType == "paperfishGo.Base64Binary" {
+                     if (fldType == "paperfishGo.Base64Binary") || (fldType == "paperfishGo.Xop")  {
                         impPaper = true
                      } else if fldType == "time.Time" {
                         impTime = true
@@ -133,6 +133,7 @@ func (ws WSClientT) Types(pkg string) string {
                   }
 
                   fldType = bName(fld.Type)
+                  Goose.Type.Logf(1,"Checking fldType %s on symtab", fldType)
                   if ws.symtab[fldType].xsdref != nil {
                      newFldType, err = Exported(bName(fld.Type))
                      if err != nil {
@@ -149,7 +150,7 @@ func (ws WSClientT) Types(pkg string) string {
                      fldType = newFldType
                   } else if _, ok = xsd2go[fldType]; ok {
                      fldType = xsd2go[fldType]
-                     if fldType == "paperfishGo.Base64Binary" {
+                     if (fldType == "paperfishGo.Base64Binary") || (fldType == "paperfishGo.Xop")  {
                         impPaper = true
                      } else if fldType == "time.Time" {
                         impTime = true

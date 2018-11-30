@@ -2,6 +2,7 @@ package paperfishGo
 
 import (
    "io"
+   "sync"
    "time"
    "bytes"
    "errors"
@@ -37,6 +38,7 @@ type FormURLHnd struct{}
 type FormDataHnd struct{}
 type BinaryHnd struct{}
 type Base64Hnd struct{}
+type XopHnd struct{}
 type SoapLiteralHnd struct {
    ws *WSClientT
    symtab XsdSymTabT
@@ -356,7 +358,7 @@ var typeOftime reflect.Type = reflect.TypeOf(time.Time{})
 var typeOfBinary reflect.Type = reflect.TypeOf([]byte{})
 
 type Base64Binary []byte
-
+type Xop string
 
 var RootCAs *x509.CertPool
 var CliCerts []tls.Certificate
@@ -391,6 +393,7 @@ var IndentPrefix string = "   "
 
 var xsd2go map[string]string = map[string]string{
    "anyURI"        : "string",
+   "xop"           : "paperfishGo.Xop",
    "base64Binary"  : "paperfishGo.Base64Binary",
    "boolean"       : "bool",
    "byte"          : "int8",
@@ -422,3 +425,7 @@ var xsd2go map[string]string = map[string]string{
 }
 
 var xopxmlEnvelopRE *regexp.Regexp = regexp.MustCompile(`(?m:^Content-Type:)`)
+var reBoundary *regexp.Regexp = regexp.MustCompile(`^([^\r\n]+)`)
+var reXopInclude *regexp.Regexp = regexp.MustCompile(`\<xop:Include [^\>]*href="cid:([^"]+)"[^\>]*/\>`)
+var xopParts sync.Map
+

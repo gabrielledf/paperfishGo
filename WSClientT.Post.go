@@ -2,10 +2,13 @@ package paperfishGo
 
 import (
    "io"
+//   "fmt"
    "bytes"
-   "io/ioutil"
    "strings"
    "net/http"
+   "io/ioutil"
+//   "encoding/xml"
+   "mime/multipart"
 )
 
 func (ws *WSClientT) Post(opName string, input map[string]interface{}, output interface{}) (int, error) {
@@ -21,7 +24,14 @@ func (ws *WSClientT) Post(opName string, input map[string]interface{}, output in
    var postdata []byte
    var postparm []*ParameterT
    var buf []byte
-   var soapbuf []string
+//   var soapbuf []string
+   var mr *multipart.Reader
+   var boundary [][]byte
+   var p *multipart.Part
+   var slurp []byte
+   var ctype string
+   var hd string
+//   var xopResp string
 
    if op, ok = ws.PostOperation[opName]; !ok {
       Goose.Fetch.Logf(1, "%s", ErrUnknownOperation)
@@ -108,14 +118,53 @@ func (ws *WSClientT) Post(opName string, input map[string]interface{}, output in
       return 0, err
    }
 
-   Goose.Fetch.Logf(8, "RESP: %s\n----------\n\n", buf)
+   Goose.Fetch.Logf(8, "RESP: %s ===================================================", bytes.Replace(buf[:500],[]byte("\r\n"),[]byte("//"),-1))
 
-   if xopxmlEnvelopRE.Match(buf) {
-      soapbuf = strings.Split(string(buf),"\n")
-      buf = []byte(soapbuf[len(soapbuf)-2])
-      Goose.Fetch.Logf(8, "REBUF: %s\n----------\n\n", buf)
+  // Goose.Fetch.Fatalf(6, "TID:[%s] Regex: %#v", trackId, xopxmlEnvelopRE.Match(buf[:500]))
+
+   if xopxmlEnvelopRE.Match(buf[:500]) {
+
+      boundary = reBoundary.FindSubmatch(buf)
+      if len(boundary) == 0 {
+         Goose.Fetch.Logf(6, "TID:[%s] Error fetching multipart boundary for %s", trackId, opName, ErrEmptyString)
+         return 0, ErrEmptyString
+      }
+
+      Goose.Fetch.Logf(6, "TID:[%s] Boundary [%s]\n", trackId, boundary[0])
+
+      mr = multipart.NewReader(bytes.NewReader(buf), string(boundary[0][2:]))
+//      xopParts = map[string]string{}
+      for {
+         p, err = mr.NextPart()
+         if err == io.EOF {
+            Goose.Fetch.Logf(6, "TID:[%s] fetching part for %s: %s", trackId, opName, io.EOF)
+            break
+         }
+         if err != nil {
+            break
+         }
+         slurp, err = ioutil.ReadAll(p)
+         if err != nil {
+            break
+         }
+
+         ctype = p.Header.Get("Content-Type")
+
+         if len(ctype)>=19 && ctype[:19]=="application/xop+xml" {
+            buf = slurp
+         } else {
+            hd = p.Header.Get("Content-ID")
+            xopParts.Store(hd[1:len(hd)-1], string(slurp))
+         }
+   //      fmt.Printf("Part %q: %q\n", p.Header.Get("Content-Type"), slurp)
+      }
+
+      //soapbuf = strings.Split(string(buf),"\n")
+      //buf = []byte(soapbuf[len(soapbuf)-2])
+      Goose.Fetch.Logf(8, "REBUF: %s", buf)
    }
 
+   Goose.Fetch.Logf(5, "Using decoder: %#v", ws.PostOperation[opName].Decoder)
    err = ws.PostOperation[opName].Decoder.Decode(bytes.NewReader(buf), output)
    if err != nil && err != io.EOF {
       Goose.Fetch.Logf(6, "TID:[%s] Error decoding response for %s:%s", trackId, opName, err)
