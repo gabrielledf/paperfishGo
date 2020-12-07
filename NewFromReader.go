@@ -11,6 +11,7 @@ import (
    "crypto/x509"
    "encoding/xml"
    "encoding/json"
+//   "github.com/kr/pretty"
    "github.com/luisfurquim/stonelizard"
 )
 
@@ -35,6 +36,9 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
    var peekChar []byte
    var op *OperationT
    var swaggerParm stonelizard.SwaggerParameterT
+   var swaggerResp stonelizard.SwaggerResponseT
+   var sHttpStat string
+   var httpStat int
    var paperParm *ParameterT
    var k reflect.Kind
    var method string
@@ -57,6 +61,11 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
    var mesgIndex int
    var typ string
    var soapenc *SoapLiteralHnd
+   var gotyp reflect.Type
+   var title string
+   var swModule map[string]*stonelizard.SwaggerSchemaT
+   var swProp *stonelizard.SwaggerSchemaT
+   var modName, propName string
 
    ws = []WSClientT{}
    if client == nil {
@@ -400,7 +409,6 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
          Goose.New.Logf(1, "Error decoding service contract: %s", err)
          return nil, err
       }
-
       ws = append(ws, WSClientT{
          Client:           client,
          GetOperation:     map[string]*OperationT{},
@@ -441,16 +449,45 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
 
       ws[0].Decoder = coder.(Decoder)
 
+      // Modules
+
+      ws[0].Modules = map[string]map[string]ModData{}
+
+      for modName, swModule = range ct.Info.XModules {
+         ws[0].Modules[modName] = map[string]ModData{}
+         for propName, swProp = range swModule {
+            _, gotyp, err = getType(*swProp)
+            if err != nil {
+               Goose.New.Logf(1, "Error getting type of module property %s.%s: %s", modName, propName, err)
+               return nil, err
+            }
+            ws[0].Modules[modName][propName] = ModData{
+               Type: gotyp,
+               Schema: swProp,
+            }
+         }
+      }
+
+
+
+Goose.New.Logf(0, "1")
+
       for pathname, pathdef = range ct.Paths {
       OperLoop:
          for method, operation = range pathdef {
+
             op = new(OperationT)
+
+            op.XModule = operation.XModule
+            op.XOutput = operation.XOutput
+            op.XOutputVar = operation.XOutputVar
 
             if pathname[0] == '/' {
                pathname = pathname[1:]
             }
             op.Path = fmt.Sprintf("%s/%s/%s", ws[0].Host, ws[0].BasePath, pathname)
 
+Goose.New.Logf(0, "2")
             // consumes
             coder, err = GetCoder(operation.Consumes)
             if err != nil {
@@ -459,6 +496,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
             }
             op.Encoder = coder.(Encoder)
 
+Goose.New.Logf(0, "3")
             // Produces
             coder, err = GetCoder(operation.Produces)
             if err != nil {
@@ -475,6 +513,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
 
             Goose.New.Logf(4, " %s %#v -> %s+%s -> %s %#v\n", operation.Consumes, op.Encoder, method, operation.OperationId, operation.Produces, op.Decoder)
 
+Goose.New.Logf(0, "4")
             for _, subOpSpec = range operation.XWSOperations {
                Goose.New.Logf(2, "Registering sub-operation %s.%s.%s", method, operation.OperationId, subOpSpec.SuboperationId)
                subop = &SubOperationT{Id: subOpSpec.SuboperationId}
@@ -482,7 +521,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                   if param.Type != "" {
                      k, err = getKind(param.Type)
                   } else {
-                     k = kindString
+                     k = reflect.String
                   }
                   if err != nil {
                      Goose.New.Logf(1, "Ignoring sub-operation %s.%s.%s.%s: %s", method, operation.OperationId, subOpSpec.SuboperationId, param.Name, err)
@@ -523,22 +562,47 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                continue OperLoop
             }
 
+//Goose.New.Fatalf(0,"Operation: id=%s, schema=%#v", operation.OperationId, *operation.Responses["200"].Schema)
+
             for _, swaggerParm = range operation.Parameters {
+               paperParm = &ParameterT{Name: swaggerParm.Name}
+
+//Goose.New.Logf(0,"swaggerParm %# v", pretty.Formatter(swaggerParm))
+
                if swaggerParm.Type != "" {
-                  k, err = getKind(swaggerParm.Type)
+                  paperParm.Kind, err = getKind(swaggerParm.Type)
+                  if swaggerParm.Schema == nil {
+                     paperParm.Title, paperParm.Type, err = getType(stonelizard.SwaggerSchemaT{
+                        Type: swaggerParm.Type,
+                     })
+                  } else {
+                     paperParm.Title, paperParm.Type, err = getType(*swaggerParm.Schema)
+                     paperParm.Schema = swaggerParm.Schema
+                     if swaggerParm.Type == "object" {
+                        paperParm.Properties = swaggerParm.Schema.Properties
+                     }
+//                  } else if swaggerParm.Items != nil {
+//                     paperParm.Schema = swaggerParm.Items
+                  }
                } else if (swaggerParm.Schema != nil) && (swaggerParm.Schema.Type != "") {
-                  k, err = getKind(swaggerParm.Schema.Type)
+                  paperParm.Kind, err = getKind(swaggerParm.Schema.Type)
+                  paperParm.Title, paperParm.Type, err = getType(*swaggerParm.Schema)
+                  if swaggerParm.Schema != nil {
+                     paperParm.Schema = swaggerParm.Schema
+//                  } else if swaggerParm.Items != nil {
+//                     paperParm.Schema = swaggerParm.Items
+                  }
                } else {
-                  k = kindString
+                  paperParm.Kind = reflect.String
+                  paperParm.Title = "void"
+                  paperParm.Type = reflect.TypeOf("")
                }
+
+//Goose.New.Fatalf(0,"paperParm %# v", pretty.Formatter(paperParm))
+
                if err != nil {
                   Goose.New.Logf(1, "Ignoring operation %s.%s.%s: %s", method, operation.OperationId, swaggerParm.Name, err)
                   continue
-               }
-
-               paperParm = &ParameterT{
-                  Name: swaggerParm.Name,
-                  Kind: k,
                }
 
                switch strings.ToLower(swaggerParm.In) {
@@ -554,9 +618,44 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
                   op.FormParm = append(op.FormParm, paperParm)
                }
             }
+
+            op.Output = map[int]*ParameterT{}
+            for sHttpStat, swaggerResp = range operation.Responses {
+               if swaggerResp.Schema==nil || swaggerResp.Schema.Type == "" {
+                  continue
+               }
+
+Goose.New.Logf(0, "5")
+               k, err = getKind(swaggerResp.Schema.Type)
+               if err != nil {
+                  Goose.New.Logf(1, "Error getting kind of response %s.%s: %s", method, operation.OperationId, err)
+                  return nil, err
+               }
+
+Goose.New.Logf(0, "6")
+               fmt.Sscanf(sHttpStat,"%d", &httpStat)
+               title, gotyp, err = getType(*swaggerResp.Schema)
+               if err != nil {
+                  Goose.New.Logf(1, "IError getting type of response %s.%s.%s: %s", method, operation.OperationId, swaggerParm.Name, err)
+                  return nil, err
+               }
+
+               op.Output[httpStat] = &ParameterT{
+                  Name: title,
+                  Kind: k,
+                  Type: gotyp,
+                  Title: title,
+                  Schema: swaggerResp.Schema,
+                  Properties: swaggerResp.Schema.Properties,
+               }
+
+Goose.New.Logf(0, "7")
+            }
+
          }
       }
    }
 
+Goose.New.Logf(0, "8")
    return ws, nil
 }

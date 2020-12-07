@@ -13,6 +13,7 @@ import (
    "crypto/x509"
    "encoding/xml"
    "github.com/luisfurquim/goose"
+   "github.com/luisfurquim/stonelizard"
 )
 
 type XsdSymT struct {
@@ -27,6 +28,10 @@ type XsdSymTabT map[string]*XsdSymT
 type ParameterT struct {
    Name string
    Kind reflect.Kind
+   Type reflect.Type
+   Title string
+   Schema *stonelizard.SwaggerSchemaT
+   Properties map[string]stonelizard.SwaggerSchemaT
 }
 
 type TextHnd struct {
@@ -89,12 +94,16 @@ type OperationT struct {
    Decoder       Decoder
    inMesg        string
    outMesg       string
+   Output        map[int]*ParameterT
    PathParm      []*ParameterT
    HeaderParm    []*ParameterT
    QueryParm     []*ParameterT
    BodyParm      *ParameterT
    FormParm      []*ParameterT
    SubOperations map[string]*SubOperationT
+   XModule       string
+   XOutput       string
+   XOutputVar    string
 }
 
 type SubOperationT struct {
@@ -102,11 +111,17 @@ type SubOperationT struct {
    Parms []*ParameterT
 }
 
+type ModData struct {
+   Type     reflect.Type
+   Schema  *stonelizard.SwaggerSchemaT
+}
+
 type WSClientT struct {
    Host             string
    BasePath         string
    Binding          string
    Schemes          []string
+   Modules          map[string]map[string]ModData
    symtab           XsdSymTabT
    TargetNamespace  string
    Xmlns            map[string]string
