@@ -90,6 +90,8 @@ func (ws *WSClientT) Get(opName string, input map[string]interface{}, output int
          return 0, err
       }
 
+      ws.signRequest(req, "GET", nil)
+
       Goose.Fetch.Logf(4, "TID:[%s] request URL %s", trackId, req.URL.Path)
       resp, err = ws.Client.Do(req)
       if err != nil {

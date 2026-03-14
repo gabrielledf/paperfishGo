@@ -422,11 +422,13 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
 
       ws[0].Host = ct.Host
       basepath = ct.BasePath
-      if basepath[0] == '/' {
-         basepath = basepath[1:]
-      }
-      if basepath[len(basepath)-1] == '/' {
-         basepath = basepath[:len(basepath)-1]
+      if len(basepath)>0 {
+         if basepath[0] == '/' {
+            basepath = basepath[1:]
+         }
+         if basepath[len(basepath)-1] == '/' {
+            basepath = basepath[:len(basepath)-1]
+         }
       }
       ws[0].BasePath = basepath
       ws[0].Schemes = ct.Schemes
@@ -473,6 +475,16 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
 Goose.New.Logf(0, "1")
 
       for pathname, pathdef = range ct.Paths {
+         if pathname[0] == '/' {
+            pathname = pathname[1:]
+         }
+
+         if len(ws[0].BasePath) == 0 {
+            pathname = fmt.Sprintf("%s/%s", ws[0].Host, pathname)
+         } else {
+            pathname = fmt.Sprintf("%s/%s/%s", ws[0].Host, ws[0].BasePath, pathname)
+         }
+
       OperLoop:
          for method, operation = range pathdef {
 
@@ -482,10 +494,7 @@ Goose.New.Logf(0, "1")
             op.XOutput = operation.XOutput
             op.XOutputVar = operation.XOutputVar
 
-            if pathname[0] == '/' {
-               pathname = pathname[1:]
-            }
-            op.Path = fmt.Sprintf("%s/%s/%s", ws[0].Host, ws[0].BasePath, pathname)
+            op.Path = pathname
 
 Goose.New.Logf(0, "2")
             // consumes
@@ -500,7 +509,7 @@ Goose.New.Logf(0, "3")
             // Produces
             coder, err = GetCoder(operation.Produces)
             if err != nil {
-               Goose.New.Logf(1, "Error parsing 'consumes' global encoding: %s", err)
+               Goose.New.Logf(1, "Error parsing 'produces' global encoding: %s", err)
                return nil, err
             }
             op.Decoder = coder.(Decoder)

@@ -104,6 +104,8 @@ func (ws *WSClientT) Post(opName string, input map[string]interface{}, output in
       return 0, err
    }
 
+   ws.signRequest(req, "POST", postdata)
+
    Goose.Fetch.Logf(5, "TID:[%s] request URL path %s", trackId, req.URL.Path)
    resp, err = ws.Client.Do(req)
    if err != nil {

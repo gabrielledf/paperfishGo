@@ -14,6 +14,7 @@ import (
    "encoding/xml"
    "github.com/luisfurquim/goose"
    "github.com/luisfurquim/stonelizard"
+   "github.com/luisfurquim/paracentric"
 )
 
 type XsdSymT struct {
@@ -128,6 +129,8 @@ type WSClientT struct {
    Encoder          Encoder
    Decoder          Decoder
    Client           *http.Client
+   Pki              *paracentric.PkiT
+   KeyId            string
    GetOperation     map[string]*OperationT
    PostOperation    map[string]*OperationT
    PutOperation     map[string]*OperationT
