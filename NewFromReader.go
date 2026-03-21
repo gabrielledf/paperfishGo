@@ -509,7 +509,7 @@ Goose.New.Logf(0, "3")
             // Produces
             coder, err = GetCoder(operation.Produces)
             if err != nil {
-               Goose.New.Logf(1, "Error parsing 'produces' global encoding: %s", err)
+               Goose.New.Logf(1, "Error parsing 'produces' operation encoding: %s (%s)", err, operation.Produces)
                return nil, err
             }
             op.Decoder = coder.(Decoder)
