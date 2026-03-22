@@ -472,7 +472,7 @@ func NewFromReader(contract io.Reader, client *http.Client) ([]WSClientT, error)
 
 
 
-Goose.New.Logf(0, "1")
+//Goose.New.Logf(0, "1")
 
       for pathname, pathdef = range ct.Paths {
          if pathname[0] == '/' {
@@ -496,7 +496,7 @@ Goose.New.Logf(0, "1")
 
             op.Path = pathname
 
-Goose.New.Logf(0, "2")
+//Goose.New.Logf(0, "2")
             // consumes
             coder, err = GetCoder(operation.Consumes)
             if err != nil {
@@ -505,7 +505,7 @@ Goose.New.Logf(0, "2")
             }
             op.Encoder = coder.(Encoder)
 
-Goose.New.Logf(0, "3")
+//Goose.New.Logf(0, "3")
             // Produces
             coder, err = GetCoder(operation.Produces)
             if err != nil {
@@ -522,7 +522,7 @@ Goose.New.Logf(0, "3")
 
             Goose.New.Logf(4, " %s %#v -> %s+%s -> %s %#v\n", operation.Consumes, op.Encoder, method, operation.OperationId, operation.Produces, op.Decoder)
 
-Goose.New.Logf(0, "4")
+//Goose.New.Logf(0, "4")
             for _, subOpSpec = range operation.XWSOperations {
                Goose.New.Logf(2, "Registering sub-operation %s.%s.%s", method, operation.OperationId, subOpSpec.SuboperationId)
                subop = &SubOperationT{Id: subOpSpec.SuboperationId}
@@ -634,14 +634,14 @@ Goose.New.Logf(0, "4")
                   continue
                }
 
-Goose.New.Logf(0, "5")
+//Goose.New.Logf(0, "5")
                k, err = getKind(swaggerResp.Schema.Type)
                if err != nil {
                   Goose.New.Logf(1, "Error getting kind of response %s.%s: %s", method, operation.OperationId, err)
                   return nil, err
                }
 
-Goose.New.Logf(0, "6")
+//Goose.New.Logf(0, "6")
                fmt.Sscanf(sHttpStat,"%d", &httpStat)
                title, gotyp, err = getType(*swaggerResp.Schema)
                if err != nil {
@@ -658,13 +658,13 @@ Goose.New.Logf(0, "6")
                   Properties: swaggerResp.Schema.Properties,
                }
 
-Goose.New.Logf(0, "7")
+//Goose.New.Logf(0, "7")
             }
 
          }
       }
    }
 
-Goose.New.Logf(0, "8")
+//Goose.New.Logf(0, "8")
    return ws, nil
 }
